@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: P@55w0rd123456789
+      MYSQL_USER: db_l
+      MYSQL_PASSWORD: P@55w0rd123456789
+      MYSQL_DATABASE: db_raion_app
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      MYSQL_ROOT_PASSWORD: P@55w0rd123456789
+      PMA_HOST: mysql
+    ports:
+      - "8001:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
