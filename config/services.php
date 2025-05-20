@@ -38,6 +38,7 @@ return [
     'productive' => [
         'api_url' => env('PRODUCTIVE_API_URL'),
         'api_token' => env('PRODUCTIVE_API_TOKEN'),
+        'organization_id' => env('PRODUCTIVE_ORGANIZATION_ID'),
     ],
 
 ];

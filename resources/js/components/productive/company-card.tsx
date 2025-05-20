@@ -14,7 +14,8 @@ export function CompanyCard({ company }: CompanyCardProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <div className="text-sm text-muted-foreground">            Created: {new Date(company.createdAt).toLocaleDateString()}
+          <div className="text-sm text-muted-foreground">
+            Created: {new Date(company.createdAt).toLocaleDateString()}
           </div>
           <div className="text-sm text-muted-foreground">
             Updated: {new Date(company.updatedAt).toLocaleDateString()}

@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Company Schema
 export const CompanySchema = z.object({
     id: z.string(),
-    type: z.literal('companies'),    attributes: z.object({
+    type: z.literal('companies'), attributes: z.object({
         name: z.string(),
         updated_at: z.string().optional().default(new Date().toISOString()),
         created_at: z.string().optional().default(new Date().toISOString())
@@ -21,12 +21,13 @@ export const CompanySchema = z.object({
 // Project Schema 
 export const ProjectSchema = z.object({
     id: z.string(),
-    type: z.literal('projects'),    attributes: z.object({        name: z.string(),
+    type: z.literal('projects'), attributes: z.object({
+        name: z.string(),
         project_type: z.number().optional().default(2), // 1: internal, 2: client
         status: z.number().optional().default(1), // 1: active, 2: archived
         updated_at: z.string().optional().default(new Date().toISOString()),
         created_at: z.string().optional().default(new Date().toISOString())
-    }),    relationships: z.object({
+    }), relationships: z.object({
         company: z.object({
             data: z.object({
                 id: z.string(),

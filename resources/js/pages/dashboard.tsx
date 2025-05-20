@@ -7,6 +7,7 @@ import { AlertTriangle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { CompanyCard } from '@/components/productive/company-card';
 import { ProjectsTable } from '@/components/productive/projects-table';
+import { SyncButton } from '@/components/productive/sync-button';
 import { useProductiveStore } from '@/stores/use-productive-store';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -31,11 +32,10 @@ export default function Dashboard() {
         fetchData().catch(console.error);
     }, [fetchData]);
 
-    // Convert records to arrays
+    // Convert records to arrays and filter by search
     const companiesArray = Object.values(companies);
     const projectsArray = Object.values(projects);
 
-    // Filter and paginate data
     const filteredCompanies = companiesArray.filter(company =>
         company.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -87,22 +87,28 @@ export default function Dashboard() {
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex items-center justify-between">
-                    <Tabs value={activeTab} onValueChange={(value) => {
-                        setActiveTab(value);
-                        setCurrentPage(1); // Reset page when switching tabs
-                    }}>
-                        <TabsList>
-                            <TabsTrigger value="companies">Companies</TabsTrigger>
-                            <TabsTrigger value="projects">Projects</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex items-center gap-4">
+                        <Tabs 
+                            value={activeTab} 
+                            onValueChange={(value) => {
+                                setActiveTab(value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <TabsList>
+                                <TabsTrigger value="companies">Companies</TabsTrigger>
+                                <TabsTrigger value="projects">Projects</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        <SyncButton />
+                    </div>
 
                     <Input
                         placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
-                            setCurrentPage(1); // Reset page when searching
+                            setCurrentPage(1);
                         }}
                         className="max-w-sm"
                     />

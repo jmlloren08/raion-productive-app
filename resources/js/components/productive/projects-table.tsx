@@ -41,7 +41,7 @@ export function ProjectsTable({ projects, companies }: ProjectsTableProps) {
               <TableCell>
                 {companies[project.companyId]?.name || "No Company"}
               </TableCell>
-              <TableCell>{project.status === 1 ? "Active" : "Archived"}</TableCell>
+              <TableCell>{project.status}</TableCell>
               <TableCell>{formatDate(project.createdAt)}</TableCell>
               <TableCell>{formatDate(project.updatedAt)}</TableCell>
             </TableRow>

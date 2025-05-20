@@ -1,53 +1,45 @@
 import axios from 'axios';
 import { create } from 'zustand';
-import { 
-    type Company, 
-    type Project,
-    CompaniesResponseSchema,
-    // ProjectsResponseSchema 
-} from '../types/productive';
+import { type Company, type Project } from '../types/productive';
+
+interface SyncStatus {
+    last_sync: string | null;
+    is_syncing: boolean;
+    stats: {
+        companies_count: number;
+        projects_count: number;
+        deals_count: number;
+    };
+}
+
+interface ApiCompany {
+    id: string;
+    name: string;
+    productive_created_at: string;
+    productive_updated_at: string;
+}
+
+interface ApiProject {
+    id: string;
+    name: string;
+    status: number;
+    project_type: number;
+    company_id: string;
+    productive_created_at: string;
+    productive_updated_at: string;
+}
 
 interface ProductiveStore {
     companies: Record<string, Company>;
     projects: Record<string, Project>;
     isLoading: boolean;
     error: string | null;
+    syncStatus: SyncStatus | null;
+    isSyncing: boolean;
+    syncError: string | null;
     fetchData: () => Promise<void>;
-}
-
-const API_URL = import.meta.env.VITE_PRODUCTIVE_API_URL as string;
-const API_TOKEN = import.meta.env.VITE_PRODUCTIVE_API_TOKEN as string;
-const ORGANIZATION_ID = import.meta.env.VITE_PRODUCTIVE_ORGANIZATION_ID as string;
-
-if (!API_URL || !API_TOKEN || !ORGANIZATION_ID) {
-    throw new Error('Productive.io API configuration is missing. Please check your .env file.');
-}
-
-// Helper function to fetch all pages
-async function fetchAllPages(
-    url: string,
-    headers: any,
-    params: any = {}
-): Promise<any[]> {
-    let allData: any[] = [];
-    let nextUrl = url;    let allIncluded: any[] = [];
-    while (nextUrl) {
-        const response = await axios.get(nextUrl, { headers, params });
-        const { data, included, links } = response.data;
-        allData = [...allData, ...data];
-        if (included) {
-            allIncluded = [...allIncluded, ...included];
-        }
-
-        // Check if there's a next page
-        nextUrl = links?.next || null;
-        // Clear params after first request since they're in the URL
-        params = {};
-    }
-
-    return { data: allData, included: allIncluded };
-
-    // return allData;
+    checkSyncStatus: () => Promise<void>;
+    triggerSync: () => Promise<void>;
 }
 
 export const useProductiveStore = create<ProductiveStore>((set, get) => ({
@@ -55,103 +47,52 @@ export const useProductiveStore = create<ProductiveStore>((set, get) => ({
     projects: {},
     isLoading: false,
     error: null,
+    syncStatus: null,
+    isSyncing: false,
+    syncError: null,
+
     fetchData: async () => {
         set({ isLoading: true, error: null });
         
         try {
-            const headers = {
-                'X-Auth-Token': API_TOKEN,
-                'X-Organization-Id': ORGANIZATION_ID,
-                'Content-Type': 'application/vnd.api+json',
-                'Accept': 'application/vnd.api+json'
-            };
+            // Fetch from local API endpoints instead of Productive API
+            const [companiesRes, projectsRes] = await Promise.all([
+                axios.get<ApiCompany[]>('/companies'),
+                axios.get<ApiProject[]>('/projects')
+            ]);
 
-            // First fetch active companies
-            // console.log('Fetching companies...');
-            const companiesResponse = await axios.get(`${API_URL}/companies`, { 
-                headers,
-                params: {
-                    'page[size]': 100,
-                    'filter[status]': 1
-                }
-            });
-            
-            const companiesData = CompaniesResponseSchema.parse({ 
-                data: companiesResponse.data.data 
-            });
-            
-            // Then fetch active projects with their companies included
-            // console.log('Fetching projects...');
-            const projectsResponse = await axios.get(`${API_URL}/projects`, {
-                headers,
-                params: {
-                    'page[size]': 100,
-                    'filter[project_type]': 2,
-                    'filter[status]': 1,
-                    'include': 'company'
-                }
-            });
-            
-            const { data: projectsData, included } = projectsResponse.data;
-
-            // Initialize companies map
             const companies: Record<string, Company> = {};
-            
-            // First add companies from direct companies fetch
-            companiesData.data.forEach(company => {
+            const projects: Record<string, Project> = {};
+
+            // Process companies from local database
+            companiesRes.data.forEach((company) => {
                 companies[company.id] = {
                     id: company.id,
-                    name: company.attributes.name,
+                    name: company.name,
                     projects: [],
-                    updatedAt: company.attributes.updated_at,
-                    createdAt: company.attributes.created_at
+                    updatedAt: company.productive_updated_at,
+                    createdAt: company.productive_created_at
                 };
             });
-            
-            // Then add any companies included in the projects response
-            if (included) {
-                included.forEach((company: any) => {
-                    if (company.type === 'companies' && !companies[company.id]) {
-                        companies[company.id] = {
-                            id: company.id,
-                            name: company.attributes.name,
-                            projects: [],
-                            updatedAt: company.attributes.updated_at,
-                            createdAt: company.attributes.created_at
-                        };
-                    }
-                });
-            }
 
-            // Process projects and link them to companies
-            const projects: Record<string, Project> = {};
-            projectsData.forEach((project: any) => {
-                try {
-                    const companyId = project.relationships?.company?.data?.id;
-                    const projectId = project.id;
-                    
-                    projects[projectId] = {
-                        id: projectId,
-                        name: project.attributes.name,
-                        status: project.attributes.status ?? 1,
-                        projectType: project.attributes.project_type ?? 2,
-                        companyId: companyId || '',
-                        updatedAt: project.attributes.updated_at,
-                        createdAt: project.attributes.created_at
-                    };
-                    
-                    if (companyId && companies[companyId]) {
-                        companies[companyId].projects.push(projectId);
-                    }
-                } catch (error) {
-                    console.error('Error processing project:', project.id, error);
+            // Process projects from local database
+            projectsRes.data.forEach((project) => {
+                const projectId = project.id;
+                projects[projectId] = {
+                    id: projectId,
+                    name: project.name,
+                    status: project.status,
+                    projectType: project.project_type,
+                    companyId: project.company_id,
+                    updatedAt: project.productive_updated_at,
+                    createdAt: project.productive_created_at
+                };
+
+                // Link project to company
+                if (project.company_id && companies[project.company_id]) {
+                    companies[project.company_id].projects.push(projectId);
                 }
             });
-
-            // console.log('Final data:', {
-            //     companies: Object.keys(companies).length,
-            //     projects: Object.keys(projects).length
-            // });
 
             set({ companies, projects, isLoading: false });
         } catch (err) {
@@ -165,9 +106,37 @@ export const useProductiveStore = create<ProductiveStore>((set, get) => ({
                 console.error('API Response:', data);
             }
             
-            set({
-                error: errorMessage,
-                isLoading: false
+            set({ error: errorMessage, isLoading: false });
+        }
+    },
+
+    checkSyncStatus: async () => {
+        try {
+            const response = await axios.get<SyncStatus>('/productive/sync/status');
+            set({ syncStatus: response.data });
+        } catch (err) {
+            console.error('Error checking sync status:', err);
+            set({ syncError: 'Failed to check sync status' });
+        }
+    },
+
+    triggerSync: async () => {
+        try {
+            set({ isSyncing: true, syncError: null });
+            const response = await axios.post<SyncStatus>('/productive/sync');
+            
+            set({ 
+                syncStatus: response.data,
+                isSyncing: false
+            });
+
+            // Refresh local data after sync
+            get().fetchData();
+        } catch (err) {
+            console.error('Error triggering sync:', err);
+            set({ 
+                syncError: 'Failed to trigger sync',
+                isSyncing: false
             });
         }
     }
