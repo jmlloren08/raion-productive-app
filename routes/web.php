@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\ProductiveSyncController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/companies/{id}', [CompanyController::class, 'show']);
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
+    Route::get('/deals', [DealController::class, 'index']);
+    Route::get('/deals/{id}', [DealController::class, 'show']);
 
     // Sync endpoints
     Route::prefix('productive')->group(function () {

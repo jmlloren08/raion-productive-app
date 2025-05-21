@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { create } from 'zustand';
-import { type Company, type Project } from '../types/productive';
+import { type Company, type Project, type Deal } from '../types/productive';
 
 interface SyncStatus {
     last_sync: string | null;
@@ -29,9 +29,19 @@ interface ApiProject {
     productive_updated_at: string;
 }
 
+interface ApiDeal {
+    id: string;
+    name: string;
+    company_id: string | null;
+    project_id: string | null;
+    productive_created_at: string;
+    productive_updated_at: string;
+}
+
 interface ProductiveStore {
     companies: Record<string, Company>;
     projects: Record<string, Project>;
+    deals: Record<string, Deal>;
     isLoading: boolean;
     error: string | null;
     syncStatus: SyncStatus | null;
@@ -45,6 +55,7 @@ interface ProductiveStore {
 export const useProductiveStore = create<ProductiveStore>((set, get) => ({
     companies: {},
     projects: {},
+    deals: {},
     isLoading: false,
     error: null,
     syncStatus: null,
@@ -56,13 +67,15 @@ export const useProductiveStore = create<ProductiveStore>((set, get) => ({
         
         try {
             // Fetch from local API endpoints instead of Productive API
-            const [companiesRes, projectsRes] = await Promise.all([
+            const [companiesRes, projectsRes, dealsRes] = await Promise.all([
                 axios.get<ApiCompany[]>('/companies'),
-                axios.get<ApiProject[]>('/projects')
+                axios.get<ApiProject[]>('/projects'),
+                axios.get<ApiDeal[]>('/deals')
             ]);
 
             const companies: Record<string, Company> = {};
             const projects: Record<string, Project> = {};
+            const deals: Record<string, Deal> = {};
 
             // Process companies from local database
             companiesRes.data.forEach((company) => {
@@ -94,7 +107,20 @@ export const useProductiveStore = create<ProductiveStore>((set, get) => ({
                 }
             });
 
-            set({ companies, projects, isLoading: false });
+            // Process deals from local database
+            dealsRes.data.forEach((deal) => {
+                const dealId = deal.id;
+                deals[dealId] = {
+                    id: dealId,
+                    name: deal.name,
+                    companyId: deal.company_id,
+                    projectId: deal.project_id,
+                    updatedAt: deal.productive_updated_at,
+                    createdAt: deal.productive_created_at
+                };
+            });
+
+            set({ companies, projects, deals, isLoading: false });
         } catch (err) {
             console.error('Error in fetchData:', err);
             let errorMessage = 'Failed to fetch data';

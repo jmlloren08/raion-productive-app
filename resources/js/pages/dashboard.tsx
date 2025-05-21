@@ -5,8 +5,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
-import { CompanyCard } from '@/components/productive/company-card';
+import { CompaniesTable } from '@/components/productive/companies-table';
 import { ProjectsTable } from '@/components/productive/projects-table';
+import { DealsTable } from '@/components/productive/deals-table';
 import { SyncButton } from '@/components/productive/sync-button';
 import { useProductiveStore } from '@/stores/use-productive-store';
 import { type BreadcrumbItem } from '@/types';
@@ -21,7 +22,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard() {
-    const { companies, projects, isLoading, error, fetchData } = useProductiveStore();
+    const { companies, projects, deals, isLoading, error, fetchData } = useProductiveStore();
     const [activeTab, setActiveTab] = useState('companies');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +36,7 @@ export default function Dashboard() {
     // Convert records to arrays and filter by search
     const companiesArray = Object.values(companies);
     const projectsArray = Object.values(projects);
+    const dealsArray = Object.values(deals);
 
     const filteredCompanies = companiesArray.filter(company =>
         company.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -44,6 +46,12 @@ export default function Dashboard() {
         project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (companies[project.companyId]?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
+    
+    const filteredDeals = dealsArray.filter(deal =>
+        deal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (deal.companyId && companies[deal.companyId]?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (deal.projectId && projects[deal.projectId]?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const paginatedData = (data: any[]) => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -51,7 +59,9 @@ export default function Dashboard() {
     };
 
     const totalPages = Math.ceil(
-        (activeTab === 'companies' ? filteredCompanies.length : filteredProjects.length) / itemsPerPage
+        (activeTab === 'companies' ? filteredCompanies.length 
+         : activeTab === 'projects' ? filteredProjects.length
+         : filteredDeals.length) / itemsPerPage
     );
 
     if (error) {
@@ -98,6 +108,7 @@ export default function Dashboard() {
                             <TabsList>
                                 <TabsTrigger value="companies">Companies</TabsTrigger>
                                 <TabsTrigger value="projects">Projects</TabsTrigger>
+                                <TabsTrigger value="deals">Deals</TabsTrigger>
                             </TabsList>
                         </Tabs>
                         <SyncButton />
@@ -116,24 +127,36 @@ export default function Dashboard() {
 
                 <div className="mt-4">
                     {activeTab === 'companies' ? (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {paginatedData(filteredCompanies).map((company) => (
-                                <CompanyCard key={company.id} company={company} />
-                            ))}
-                        </div>
-                    ) : (
+                        <CompaniesTable 
+                            companies={paginatedData(filteredCompanies)}
+                        />
+                    ) : activeTab === 'projects' ? (
                         <ProjectsTable 
                             projects={paginatedData(filteredProjects)}
                             companies={companies}
+                        />
+                    ) : (
+                        <DealsTable
+                            deals={paginatedData(filteredDeals)}
+                            companies={companies}
+                            projects={projects}
                         />
                     )}
 
                     {/* Pagination controls */}
                     <div className="mt-4 flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">
-                            {activeTab === 'companies' ? 'Companies' : 'Projects'} {(currentPage - 1) * itemsPerPage + 1} -{' '}
-                            {Math.min(currentPage * itemsPerPage, activeTab === 'companies' ? filteredCompanies.length : filteredProjects.length)}{' '}
-                            of {activeTab === 'companies' ? filteredCompanies.length : filteredProjects.length}
+                            {activeTab === 'companies' ? 'Companies' : activeTab === 'projects' ? 'Projects' : 'Deals'}{' '}
+                            {(currentPage - 1) * itemsPerPage + 1} -{' '}
+                            {Math.min(currentPage * itemsPerPage, 
+                                activeTab === 'companies' ? filteredCompanies.length 
+                                : activeTab === 'projects' ? filteredProjects.length
+                                : filteredDeals.length
+                            )}{' '}
+                            of {activeTab === 'companies' ? filteredCompanies.length 
+                                : activeTab === 'projects' ? filteredProjects.length
+                                : filteredDeals.length
+                            }
                         </div>
                         <div className="flex gap-2">
                             <Button

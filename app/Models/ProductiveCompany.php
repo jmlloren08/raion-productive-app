@@ -10,6 +10,7 @@ class ProductiveCompany extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
+
     protected $fillable = [
         'id',
         'type',
@@ -17,12 +18,10 @@ class ProductiveCompany extends Model
         'billing_name',
         'vat',
         'default_currency',
-        'created_at',
+        'created_at_api',
         'last_activity_at',
         'archived_at',
         'avatar_url',
-        'invoice_email_recipients',
-        'custom_fields',
         'company_code',
         'domain',
         'projectless_budgets',
@@ -36,38 +35,25 @@ class ProductiveCompany extends Model
         'due_days',
         'tag_list',
         'contact',
-        'sample_data',
+        'invoice_email_recipients',
         'settings',
+        'custom_fields',
         'external_id',
         'external_sync',
-        'organization_type',
-        'organization_id',
-        'default_subsidiary_meta_included',
-        'default_tax_rate_meta_included',
-        'custom_field_people_meta_included',
-        'custom_field_attachments_meta_included',
-        'productive_created_at',
-        'productive_updated_at',
-    ];    protected $casts = [
-        'created_at' => 'datetime',
-        'last_activity_at' => 'datetime',
-        'archived_at' => 'datetime',
+        'productive_id',
+    ];
+
+    protected $casts = [
+        'tag_list' => 'array',
         'invoice_email_recipients' => 'array',
         'custom_fields' => 'array',
-        'projectless_budgets' => 'boolean',
-        'tag_list' => 'array',
         'contact' => 'array',
-        'sample_data' => 'boolean',
         'settings' => 'array',
-        'external_sync' => 'array',
-        'organization_type' => 'string',
-        'organization_id' => 'string',
-        'default_subsidiary_meta' => 'array',
-        'default_tax_rate_meta' => 'array',
-        'custom_field_people_meta' => 'array',
-        'custom_field_attachments_meta' => 'array',
-        'productive_created_at' => 'datetime',
-        'productive_updated_at' => 'datetime',
+        'created_at_api' => 'datetime',
+        'last_activity_at' => 'datetime',
+        'archived_at' => 'datetime',
+        'projectless_budgets' => 'boolean',
+        'external_sync' => 'boolean',
     ];
 
     public function projects(): HasMany

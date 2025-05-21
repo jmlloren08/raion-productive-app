@@ -66,3 +66,37 @@ export type Project = {
     updatedAt: string | undefined;
     createdAt: string | undefined;
 };
+
+// Deal Schema
+export const DealSchema = z.object({
+    id: z.string(),
+    type: z.literal('deals'),
+    attributes: z.object({
+        name: z.string(),
+        updated_at: z.string().optional().default(new Date().toISOString()),
+        created_at: z.string().optional().default(new Date().toISOString())
+    }),
+    relationships: z.object({
+        company: z.object({
+            data: z.object({
+                id: z.string(),
+                type: z.literal('companies')
+            }).optional().default({ id: '', type: 'companies' })
+        }).optional().default({ data: { id: '', type: 'companies' } }),
+        project: z.object({
+            data: z.object({
+                id: z.string(),
+                type: z.literal('projects')
+            }).optional().default({ id: '', type: 'projects' })
+        }).optional().default({ data: { id: '', type: 'projects' } })
+    })
+});
+
+export type Deal = {
+    id: string;
+    name: string;
+    companyId: string | null;
+    projectId: string | null;
+    updatedAt: string | undefined;
+    createdAt: string | undefined;
+};
