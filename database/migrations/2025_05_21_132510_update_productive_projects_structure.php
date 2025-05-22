@@ -49,6 +49,9 @@ return new class extends Migration
             $table->json('task_custom_fields_positions')->nullable();
 
             $table->timestamps(); // Laravel's created_at and updated_at
+
+            // Soft delete support
+            $table->softDeletes();
         });
     }
 

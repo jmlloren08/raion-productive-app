@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\TimeEntryController;
+use App\Http\Controllers\Api\TimeEntryVersionController;
 use App\Http\Controllers\ProductiveSyncController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -16,6 +18,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+    
+    // Time Entries Page
+    Route::get('/time-entries', function () {
+        return Inertia::render('time-entries');
+    })->name('time-entries');
 
     // Data endpoints
     Route::get('/companies', [CompanyController::class, 'index']);
@@ -24,6 +31,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
     Route::get('/deals', [DealController::class, 'index']);
     Route::get('/deals/{id}', [DealController::class, 'show']);
+    Route::get('/time-entries', [TimeEntryController::class, 'index']);
+    Route::get('/time-entries/{id}', [TimeEntryController::class, 'show']);
+    Route::get('/time-entry-versions', [TimeEntryVersionController::class, 'index']);
+    Route::get('/time-entry-versions/{id}', [TimeEntryVersionController::class, 'show']);
+    Route::get('/time-entries/{id}/history', [TimeEntryVersionController::class, 'history']);
 
     // Sync endpoints
     Route::prefix('productive')->group(function () {

@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveDeal extends Model
 {
+    use SoftDeletes;
+
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
@@ -58,6 +61,8 @@ class ProductiveDeal extends Model
         'closed_at',
         'delivered_on',
         'last_activity_at',
+        'deleted_at',
+        'created_at_api',
         'sales_closed_at',
         'exchange_rate',
         'exchange_date',
@@ -115,9 +120,10 @@ class ProductiveDeal extends Model
         'date' => 'date',
         'end_date' => 'date',
         'todo_due_date' => 'date',
-        'closed_at' => 'datetime',
+        'closed_at' => 'timestamp',
         'delivered_on' => 'date',
-        'last_activity_at' => 'datetime',
+        'last_activity_at' => 'timestamp',
+        'created_at_api' => 'timestamp',
         'sales_closed_at' => 'datetime',
         'sales_closed_on' => 'date',
         'exchange_date' => 'date',

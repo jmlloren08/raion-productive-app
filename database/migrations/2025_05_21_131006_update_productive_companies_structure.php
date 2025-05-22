@@ -62,6 +62,9 @@ return new class extends Migration
 
             // Laravel's created_at and updated_at
             $table->timestamps();
+
+            // Soft delete support
+            $table->softDeletes();
         });
     }
 

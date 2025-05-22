@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Models\ProductiveCompany;
 use App\Models\ProductiveProject;
 use App\Models\ProductiveDeal;
+use App\Models\ProductiveTimeEntries;
+use App\Models\ProductiveTimeEntryVersions;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -19,7 +21,9 @@ class SyncProductiveData extends Command
     private $data = [
         'companies' => [],
         'projects' => [],
-        'deals' => []
+        'deals' => [],
+        'time_entries' => [],
+        'time_entry_versions' => []
     ];
     public function handle(): int
     {
@@ -56,6 +60,18 @@ class SyncProductiveData extends Command
                 return 1;
             }
 
+            $timeEntriesFetchSuccess = $this->fetchTimeEntries();
+            if (!$timeEntriesFetchSuccess) {
+                $this->error('Failed to fetch time entries. Aborting sync process.');
+                return 1;
+            }
+            
+            $timeEntryVersionsFetchSuccess = $this->fetchTimeEntryVersions();
+            if (!$timeEntryVersionsFetchSuccess) {
+                $this->error('Failed to fetch time entry versions. Continuing with other data.');
+                // We'll continue with other data even if versions fail
+            }
+
             // 3. Store data in MySQL
             $this->info('Storing data in database...');
             $storageSuccess = $this->storeData();
@@ -76,6 +92,8 @@ class SyncProductiveData extends Command
             $this->info('Companies synced: ' . count($this->data['companies']));
             $this->info('Projects synced: ' . count($this->data['projects']));
             $this->info('Deals synced: ' . count($this->data['deals']));
+            $this->info('Time Entries synced: ' . count($this->data['time_entries']));
+            $this->info('Time Entry Versions synced: ' . count($this->data['time_entry_versions']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 
@@ -431,6 +449,219 @@ class SyncProductiveData extends Command
             return false;
         }
     }
+    private function fetchTimeEntries(): bool
+    {
+        try {
+            $this->info('Fetching time entries...');
+
+            $allTimeEntries = [];
+            $page = 1;
+            $pageSize = 100;
+            $hasMorePages = true;
+            $includeParam = 'task,service,person'; // Include relevant relationships
+            
+            // Optional: Filter time entries by date range (e.g., last 90 days)
+            $startDate = now()->subDays(90)->format('Y-m-d');
+            $endDate = now()->format('Y-m-d');
+
+            while ($hasMorePages) {
+                try {
+                    // Following Productive API docs for time entries
+                    $response = $this->client->get("{$this->apiUrl}/time_entries", [
+                        'include' => $includeParam,
+                        'page' => [
+                            'number' => $page,
+                            'size' => $pageSize
+                        ],
+                        'sort' => '-date', // Newest first
+                        'filter' => [
+                            'date' => "{$startDate}...{$endDate}"
+                        ]
+                    ])->throw();
+
+                    $responseBody = $response->json();
+
+                    if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
+                        $this->error("Invalid API response format on page {$page}. Missing 'data' array.");
+                        $this->warn("Response format: " . json_encode(array_keys($responseBody)));
+                        continue; // Skip this page and try the next one
+                    }
+
+                    $timeEntries = $responseBody['data'];
+
+                    // Process included data if available
+                    $timeEntries = $this->processIncludedData($responseBody, $timeEntries);
+
+                    $allTimeEntries = array_merge($allTimeEntries, $timeEntries);
+
+                    // If 'included' data is present, log it for debugging
+                    if (isset($responseBody['included']) && is_array($responseBody['included'])) {
+                        $includedTypes = [];
+                        foreach ($responseBody['included'] as $included) {
+                            $type = $included['type'] ?? 'unknown';
+                            $includedTypes[$type] = ($includedTypes[$type] ?? 0) + 1;
+                        }
+                        $this->info("Page {$page} included data: " . json_encode($includedTypes));
+                    }
+
+                    // Check if we need to fetch more pages
+                    if (count($timeEntries) < $pageSize) {
+                        $hasMorePages = false;
+                    } else {
+                        $page++;
+                        $this->info("Fetching time entries page {$page}...");
+                    }
+                } catch (\Exception $e) {
+                    $this->error("Failed to fetch time entries page {$page}: " . $e->getMessage());
+
+                    // If 'include' parameter is causing problems, try with fewer includes
+                    if (strpos($e->getMessage(), 'include') !== false) {
+                        if ($includeParam === 'task,service,person') {
+                            $this->warn("Retrying with only 'task,service' include parameter");
+                            $includeParam = 'task,service';
+                            continue; // Retry with only task and service
+                        } else if ($includeParam === 'task,service') {
+                            $this->warn("Retrying with only 'task' include parameter");
+                            $includeParam = 'task';
+                            continue; // Retry with only task
+                        } else if ($includeParam === 'task') {
+                            $this->warn("Retrying without include parameters");
+                            $includeParam = '';
+                            continue; // Retry without includes
+                        }
+                    }
+
+                    if ($page > 1) {
+                        // We already have some data, so we can continue with what we have
+                        $this->warn("Proceeding with partial data ({$page} pages fetched)");
+                        $hasMorePages = false;
+                    } else {
+                        // First page failed, cannot continue
+                        throw $e;
+                    }
+                }
+            }
+
+            $this->data['time_entries'] = $allTimeEntries;
+            $this->info('Found ' . count($this->data['time_entries']) . ' time entries in total');
+
+            // Count time entries with various relationships
+            $entriesWithTask = 0;
+            $entriesWithService = 0;
+            $entriesWithPerson = 0;
+
+            foreach ($this->data['time_entries'] as $entry) {
+                if (isset($entry['relationships']['task']['data']['id'])) $entriesWithTask++;
+                if (isset($entry['relationships']['service']['data']['id'])) $entriesWithService++;
+                if (isset($entry['relationships']['person']['data']['id'])) $entriesWithPerson++;
+            }
+
+            $totalEntries = count($this->data['time_entries']);
+            if ($totalEntries > 0) {
+                $this->info("Time entries with task relationship: {$entriesWithTask} of {$totalEntries} (" .
+                    round(($entriesWithTask / $totalEntries) * 100, 2) . "%)");
+                $this->info("Time entries with service relationship: {$entriesWithService} of {$totalEntries} (" .
+                    round(($entriesWithService / $totalEntries) * 100, 2) . "%)");
+                $this->info("Time entries with person relationship: {$entriesWithPerson} of {$totalEntries} (" .
+                    round(($entriesWithPerson / $totalEntries) * 100, 2) . "%)");
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            $this->error('Failed to fetch time entries: ' . $e->getMessage());
+            if ($e instanceof \Illuminate\Http\Client\RequestException) {
+                $this->error('Response: ' . $e->response->body());
+            }
+            return false;
+        }
+    }
+    /**
+     * Fetch time entry versions from the Productive API
+     */
+    private function fetchTimeEntryVersions(): bool
+    {
+        try {
+            $this->info('Fetching time entry versions...');
+
+            $allTimeEntryVersions = [];
+            $page = 1;
+            $pageSize = 100;
+            $hasMorePages = true;
+            
+            // Optional: Filter time entry versions by date range (e.g., last 90 days)
+            $startDate = now()->subDays(90)->format('Y-m-d');
+            $endDate = now()->format('Y-m-d');
+
+            while ($hasMorePages) {
+                try {
+                    // Following Productive API docs for time entry versions
+                    $response = $this->client->get("{$this->apiUrl}/time_entry_versions", [
+                        'page' => [
+                            'number' => $page,
+                            'size' => $pageSize
+                        ],
+                        'sort' => '-created_at', // Newest first
+                        'filter' => [
+                            'created_at' => "{$startDate}T00:00:00Z...{$endDate}T23:59:59Z"
+                        ]
+                    ])->throw();
+
+                    $responseBody = $response->json();
+
+                    if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
+                        $this->error("Invalid API response format on page {$page}. Missing 'data' array.");
+                        $this->warn("Response format: " . json_encode(array_keys($responseBody)));
+                        continue; // Skip this page and try the next one
+                    }
+
+                    $timeEntryVersions = $responseBody['data'];
+
+                    // Process included data if available
+                    $timeEntryVersions = $this->processIncludedData($responseBody, $timeEntryVersions);
+
+                    $allTimeEntryVersions = array_merge($allTimeEntryVersions, $timeEntryVersions);
+
+                    // If 'included' data is present, log it for debugging
+                    if (isset($responseBody['included']) && is_array($responseBody['included'])) {
+                        $includedTypes = [];
+                        foreach ($responseBody['included'] as $included) {
+                            $type = $included['type'] ?? 'unknown';
+                            $includedTypes[$type] = ($includedTypes[$type] ?? 0) + 1;
+                        }
+                        $this->info("Page {$page} included data: " . json_encode($includedTypes));
+                    }
+
+                    // Check if we need to fetch more pages
+                    if (count($timeEntryVersions) < $pageSize) {
+                        $hasMorePages = false;
+                    } else {
+                        $page++;
+                        $this->info("Fetching time entry versions page {$page}...");
+                    }
+                } catch (\Exception $e) {
+                    $this->error("Failed to fetch time entry versions page {$page}: " . $e->getMessage());
+
+                    if ($page > 1) {
+                        // We already have some data, so we can continue with what we have
+                        $this->warn("Proceeding with partial data ({$page} pages fetched)");
+                        $hasMorePages = false;
+                    } else {
+                        // First page failed, cannot continue
+                        throw $e;
+                    }
+                }
+            }
+
+            $this->data['time_entry_versions'] = $allTimeEntryVersions;
+            $this->info('Found ' . count($this->data['time_entry_versions']) . ' time entry versions in total');
+
+            return true;
+        } catch (\Exception $e) {
+            $this->error('Failed to fetch time entry versions: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
     private function storeData(): bool
     {
         try {
@@ -445,6 +676,9 @@ class SyncProductiveData extends Command
             }
             if (empty($this->data['deals'])) {
                 $this->warn('No deals fetched from Productive API. Skipping deal storage.');
+            }
+            if (empty($this->data['time_entries'])) {
+                $this->warn('No time entries fetched from Productive API. Skipping time entries storage.');
             }
 
             // Store companies first
@@ -511,8 +745,38 @@ class SyncProductiveData extends Command
                 $this->info('Deals with project relationship: ' . $dealsWithProject . ' (' . round(($dealsWithProject / $dealsSuccess) * 100, 2) . '%)');
             }
 
+            // Store time entries
+            $this->info('Storing time entries...');
+            $timeEntriesSuccess = 0;
+            $timeEntriesError = 0;
+            foreach ($this->data['time_entries'] as $timeEntryData) {
+                try {
+                    $this->storeTimeEntry($timeEntryData);
+                    $timeEntriesSuccess++;
+                } catch (\Exception $e) {
+                    $this->error("Failed to store time entry (ID: {$timeEntryData['id']}): " . $e->getMessage());
+                    $timeEntriesError++;
+                }
+            }
+            $this->info("Time entries: {$timeEntriesSuccess} stored successfully, {$timeEntriesError} failed");
+            
+            // Store time entry versions
+            $this->info('Storing time entry versions...');
+            $timeEntryVersionsSuccess = 0;
+            $timeEntryVersionsError = 0;
+            foreach ($this->data['time_entry_versions'] as $timeEntryVersionData) {
+                try {
+                    $this->storeTimeEntryVersion($timeEntryVersionData);
+                    $timeEntryVersionsSuccess++;
+                } catch (\Exception $e) {
+                    $this->error("Failed to store time entry version (ID: {$timeEntryVersionData['id']}): " . $e->getMessage());
+                    $timeEntryVersionsError++;
+                }
+            }
+            $this->info("Time entry versions: {$timeEntryVersionsSuccess} stored successfully, {$timeEntryVersionsError} failed");
+
             // Check if we had any errors and warn the user
-            $totalErrors = $companiesError + $projectsError + $dealsError;
+            $totalErrors = $companiesError + $projectsError + $dealsError + $timeEntriesError + $timeEntryVersionsError;
             if ($totalErrors > 0) {
                 $this->warn("Completed with {$totalErrors} errors. Some records may not have been stored correctly.");
             }
@@ -861,6 +1125,189 @@ class SyncProductiveData extends Command
             }
         }
     }
+    private function storeTimeEntry(array $timeEntryData): void
+    {
+        $taskId = null;
+        if (isset($timeEntryData['relationships']['task']['data']['id'])) {
+            $taskId = $timeEntryData['relationships']['task']['data']['id'];
+        }
+
+        $serviceId = null;
+        if (isset($timeEntryData['relationships']['service']['data']['id'])) {
+            $serviceId = $timeEntryData['relationships']['service']['data']['id'];
+        }
+
+        $personId = null;
+        if (isset($timeEntryData['relationships']['person']['data']['id'])) {
+            $personId = $timeEntryData['relationships']['person']['data']['id'];
+        }
+
+        $dealId = null;
+        if (isset($timeEntryData['relationships']['deal']['data']['id'])) {
+            $dealId = $timeEntryData['relationships']['deal']['data']['id'];
+        }
+
+        $attributes = $timeEntryData['attributes'] ?? [];
+
+        // Prepare data with safe fallbacks for all fields
+        $data = [
+            'id' => $timeEntryData['id'],
+            'type' => $timeEntryData['type'] ?? 'time_entries',
+            
+            // Foreign keys
+            'task_id' => $taskId,
+            'service_id' => $serviceId,
+            'person_id' => $personId,
+            'deal_id' => $dealId,
+            
+            // Basic attributes
+            'date' => $attributes['date'] ?? null,
+            'created_at_api' => $attributes['created_at'] ?? null,
+            'time' => $attributes['time'] ?? null,
+            'billable_time' => $attributes['billable_time'] ?? null,
+            'note' => $attributes['note'] ?? null,
+            'track_method_id' => $attributes['track_method_id'] ?? null,
+            
+            // Timestamps
+            'started_at' => $attributes['started_at'] ?? null,
+            'timer_started_at' => $attributes['timer_started_at'] ?? null,
+            'timer_stopped_at' => $attributes['timer_stopped_at'] ?? null,
+            'updated_at_api' => $attributes['updated_at'] ?? null,
+            'last_activity_at' => $attributes['last_activity_at'] ?? null,
+            
+            // Status
+            'approved' => $attributes['approved'] ?? false,
+            'approved_at' => $attributes['approved_at'] ?? null,
+            'invoiced' => $attributes['invoiced'] ?? false,
+            'overhead' => $attributes['overhead'] ?? false,
+            'rejected' => $attributes['rejected'] ?? false,
+            'rejected_reason' => $attributes['rejected_reason'] ?? null,
+            'rejected_at' => $attributes['rejected_at'] ?? null,
+            'submitted' => $attributes['submitted'] ?? false,
+            
+            // IDs
+            'calendar_event_id' => $attributes['calendar_event_id'] ?? null,
+            'invoice_attribution_id' => $attributes['invoice_attribution_id'] ?? null,
+            'organization_id' => $attributes['organization_id'] ?? 
+                (isset($timeEntryData['relationships']['organization']['data']['id']) ? 
+                $timeEntryData['relationships']['organization']['data']['id'] : null),
+            
+            // Other IDs
+            'approver_id' => $attributes['approver_id'] ?? null,
+            'updater_id' => $attributes['updater_id'] ?? null,
+            'rejecter_id' => $attributes['rejecter_id'] ?? null,
+            'creator_id' => $attributes['creator_id'] ?? null,
+            'last_actor_id' => $attributes['last_actor_id'] ?? null,
+            'person_subsidiary_id' => $attributes['person_subsidiary_id'] ?? null,
+            'deal_subsidiary_id' => $attributes['deal_subsidiary_id'] ?? null,
+            'timesheet_id' => $attributes['timesheet_id'] ?? null,
+            
+            // Currency
+            'currency' => $attributes['currency'] ?? null,
+            'currency_default' => $attributes['currency_default'] ?? null,
+            'currency_normalized' => $attributes['currency_normalized'] ?? null,
+            
+            // Store the productive ID as a reference
+            'productive_id' => $timeEntryData['id']
+        ];
+
+        try {
+            ProductiveTimeEntries::updateOrCreate(
+                ['id' => $timeEntryData['id']],
+                $data
+            );
+            
+            $this->info("Stored time entry (ID: {$timeEntryData['id']})");
+        } catch (\Exception $e) {
+            $this->error("Failed to store time entry (ID: {$timeEntryData['id']}): " . $e->getMessage());
+            // Log additional details for troubleshooting
+            $this->warn("Time entry data: " . json_encode([
+                'id' => $timeEntryData['id'],
+                'date' => $attributes['date'] ?? 'Unknown Date',
+                'time' => $attributes['time'] ?? 0
+            ]));
+            
+            // If it's an SQL error with column info, log it for debugging
+            if (strpos($e->getMessage(), 'SQL') !== false) {
+                $this->warn("SQL Error: " . $e->getMessage());
+            }
+        }
+    }
+    private function storeTimeEntryVersion(array $timeEntryVersionData): void
+    {
+        $creatorId = null;
+        if (isset($timeEntryVersionData['relationships']['creator']['data']['id'])) {
+            $creatorId = $timeEntryVersionData['relationships']['creator']['data']['id'];
+        }
+
+        $organizationId = null;
+        if (isset($timeEntryVersionData['relationships']['organization']['data']['id'])) {
+            $organizationId = $timeEntryVersionData['relationships']['organization']['data']['id'];
+        }
+
+        $attributes = $timeEntryVersionData['attributes'] ?? [];
+        
+        // Check if the time entry exists in our database before trying to create a version
+        $itemId = $attributes['item_id'] ?? null;
+        $timeEntryExists = false;
+        
+        if ($itemId) {
+            $timeEntryExists = ProductiveTimeEntries::where('id', $itemId)->exists();
+            if (!$timeEntryExists) {
+                $this->warn("Time entry version (ID: {$timeEntryVersionData['id']}) references time entry ID: {$itemId}, but this time entry doesn't exist in our database. Setting item_id to null.");
+                $itemId = null; // Set to null to avoid foreign key constraint violation
+            }
+        }
+
+        // Prepare data with safe fallbacks for all fields
+        $data = [
+            'id' => $timeEntryVersionData['id'],
+            'type' => $timeEntryVersionData['type'] ?? 'time_entry_versions',
+            
+            // Foreign keys
+            'item_id' => $itemId, // Use the verified item_id
+            'creator_id' => $creatorId,
+            'organization_id' => $organizationId,
+            
+            // Event details
+            'event' => $attributes['event'] ?? null,
+            'item_type' => $attributes['item_type'] ?? null,
+            
+            // JSON field for changes
+            'object_changes' => is_array($attributes['object_changes']) 
+                ? json_encode($attributes['object_changes']) 
+                : $attributes['object_changes'] ?? null,
+            
+            // Timestamps
+            'created_at_api' => $attributes['created_at'] ?? null,
+        ];
+
+        try {
+            ProductiveTimeEntryVersions::updateOrCreate(
+                ['id' => $timeEntryVersionData['id']],
+                $data
+            );
+            
+            if ($itemId) {
+                $this->info("Stored time entry version (ID: {$timeEntryVersionData['id']}) for time entry ID: {$itemId}");
+            } else {
+                $this->info("Stored time entry version (ID: {$timeEntryVersionData['id']}) without time entry reference");
+            }
+        } catch (\Exception $e) {
+            $this->error("Failed to store time entry version (ID: {$timeEntryVersionData['id']}): " . $e->getMessage());
+            // Log additional details for troubleshooting
+            $this->warn("Time entry version data: " . json_encode([
+                'id' => $timeEntryVersionData['id'],
+                'event' => $attributes['event'] ?? 'Unknown Event',
+                'item_id' => $attributes['item_id'] ?? null,
+            ]));
+            
+            // If it's an SQL error with column info, log it for debugging
+            if (strpos($e->getMessage(), 'SQL') !== false) {
+                $this->warn("SQL Error: " . $e->getMessage());
+            }
+        }
+    }
     /**
      * Validate the data integrity after syncing
      * This checks that relationships between entities are properly maintained
@@ -887,6 +1334,17 @@ class SyncProductiveData extends Command
                 'with_project' => 0,
                 'with_both' => 0,
                 'orphaned' => 0
+            ],
+            'time_entries' => [
+                'total' => ProductiveTimeEntries::count(),
+                'with_task' => 0,
+                'with_service' => 0,
+                'with_person' => 0
+            ],
+            'time_entry_versions' => [
+                'total' => ProductiveTimeEntryVersions::count(),
+                'with_time_entry' => 0,
+                'by_event_type' => []
             ]
         ];
 
@@ -950,6 +1408,90 @@ class SyncProductiveData extends Command
             round(($stats['deals']['with_both'] / max(1, $stats['deals']['total'])) * 100, 2) . "%)");
         $this->info("- {$stats['deals']['orphaned']} are orphaned (no company or project) (" .
             round(($stats['deals']['orphaned'] / max(1, $stats['deals']['total'])) * 100, 2) . "%)");
+
+        // Time Entries
+        $this->info("Time Entries: {$stats['time_entries']['total']} total");
+        if ($stats['time_entries']['total'] > 0) {
+            $entriesWithTask = ProductiveTimeEntries::whereNotNull('task_id')->count();
+            $entriesWithService = ProductiveTimeEntries::whereNotNull('service_id')->count();
+            $entriesWithPerson = ProductiveTimeEntries::whereNotNull('person_id')->count();
+            
+            $stats['time_entries']['with_task'] = $entriesWithTask;
+            $stats['time_entries']['with_service'] = $entriesWithService;
+            $stats['time_entries']['with_person'] = $entriesWithPerson;
+            
+            $this->info("- {$stats['time_entries']['with_task']} have a task (" .
+                round(($stats['time_entries']['with_task'] / max(1, $stats['time_entries']['total'])) * 100, 2) . "%)");
+            $this->info("- {$stats['time_entries']['with_service']} have a service (" .
+                round(($stats['time_entries']['with_service'] / max(1, $stats['time_entries']['total'])) * 100, 2) . "%)");
+            $this->info("- {$stats['time_entries']['with_person']} have a person (" .
+                round(($stats['time_entries']['with_person'] / max(1, $stats['time_entries']['total'])) * 100, 2) . "%)");
+        }
+        
+        // Time Entry Versions
+        $this->info("Time Entry Versions: {$stats['time_entry_versions']['total']} total");
+        if ($stats['time_entry_versions']['total'] > 0) {
+            // Count versions with valid time entry references
+            $versionsWithTimeEntry = ProductiveTimeEntryVersions::whereNotNull('item_id')
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                          ->from('productive_time_entries')
+                          ->whereRaw('productive_time_entries.id = productive_time_entry_versions.item_id');
+                })
+                ->count();
+            
+            // Count versions with item_id but no matching time entry (orphaned)
+            $orphanedVersions = ProductiveTimeEntryVersions::whereNotNull('item_id')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                          ->from('productive_time_entries')
+                          ->whereRaw('productive_time_entries.id = productive_time_entry_versions.item_id');
+                })
+                ->count();
+            
+            // Count versions with no item_id at all
+            $versionsWithoutItemId = ProductiveTimeEntryVersions::whereNull('item_id')->count();
+            
+            $stats['time_entry_versions']['with_time_entry'] = $versionsWithTimeEntry;
+            $stats['time_entry_versions']['orphaned_references'] = $orphanedVersions;
+            $stats['time_entry_versions']['without_item_id'] = $versionsWithoutItemId;
+            
+            $withEntryPct = round(($versionsWithTimeEntry / max(1, $stats['time_entry_versions']['total'])) * 100, 2);
+            $orphanedPct = round(($orphanedVersions / max(1, $stats['time_entry_versions']['total'])) * 100, 2);
+            $noItemIdPct = round(($versionsWithoutItemId / max(1, $stats['time_entry_versions']['total'])) * 100, 2);
+            
+            $this->info("- {$versionsWithTimeEntry} have a valid time entry reference ({$withEntryPct}%)");
+            $this->info("- {$orphanedVersions} have orphaned time entry references ({$orphanedPct}%)");
+            $this->info("- {$versionsWithoutItemId} have no time entry reference (null item_id) ({$noItemIdPct}%)");
+            
+            // Count versions by event type
+            $eventTypes = ProductiveTimeEntryVersions::select('event', DB::raw('count(*) as count'))
+                ->groupBy('event')
+                ->get();
+                
+            foreach ($eventTypes as $eventType) {
+                $stats['time_entry_versions']['by_event_type'][$eventType->event] = $eventType->count;
+                $percentage = round(($eventType->count / max(1, $stats['time_entry_versions']['total'])) * 100, 2);
+                $this->info("- {$eventType->count} are '{$eventType->event}' events ({$percentage}%)");
+            }
+            
+            // List sample orphaned time entry versions
+            if ($orphanedVersions > 0) {
+                $this->warn("Sample orphaned time entry versions:");
+                $sampleOrphaned = ProductiveTimeEntryVersions::whereNotNull('item_id')
+                    ->whereNotExists(function ($query) {
+                        $query->select(DB::raw(1))
+                              ->from('productive_time_entries')
+                              ->whereRaw('productive_time_entries.id = productive_time_entry_versions.item_id');
+                    })
+                    ->take(5)
+                    ->get(['id', 'item_id', 'event', 'created_at_api']);
+                    
+                foreach ($sampleOrphaned as $sample) {
+                    $this->warn("  - Version ID: {$sample->id}, references time entry ID: {$sample->item_id}, event: {$sample->event}");
+                }
+            }
+        }
 
         return $stats;
     }

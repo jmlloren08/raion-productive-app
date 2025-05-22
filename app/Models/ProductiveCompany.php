@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveCompany extends Model
 {
+    use SoftDeletes;
+
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
@@ -49,9 +52,9 @@ class ProductiveCompany extends Model
         'custom_fields' => 'array',
         'contact' => 'array',
         'settings' => 'array',
-        'created_at_api' => 'datetime',
-        'last_activity_at' => 'datetime',
-        'archived_at' => 'datetime',
+        'created_at_api' => 'timestamp',
+        'last_activity_at' => 'timestamp',
+        'archived_at' => 'timestamp',
         'projectless_budgets' => 'boolean',
         'external_sync' => 'boolean',
     ];

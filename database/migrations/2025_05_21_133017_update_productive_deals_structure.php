@@ -53,7 +53,6 @@ return new class extends Migration
             $table->date('exchange_date')->nullable();
             $table->date('date')->nullable();
             $table->date('end_date')->nullable();
-            $table->timestamp('deleted_at')->nullable(); // soft delete support
 
             // Financials
             $table->decimal('revenue', 15, 2)->nullable();
@@ -132,6 +131,9 @@ return new class extends Migration
             $table->string('currency_normalized')->nullable();
 
             $table->timestamps(); // Laravel created_at / updated_at
+
+            // Soft delete support
+            $table->softDeletes();
         });
     }
 
