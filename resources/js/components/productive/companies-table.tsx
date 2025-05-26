@@ -16,31 +16,27 @@ interface CompaniesTableProps {
 }
 
 export function CompaniesTable({ companies }: CompaniesTableProps) {
-  const formatDate = (date: string | undefined) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString();
-  };
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
             <TableHead>ID</TableHead>
+            <TableHead>Code</TableHead>
+            <TableHead>Name</TableHead>
             <TableHead>Projects Count</TableHead>
             <TableHead>Created At</TableHead>
-            <TableHead>Updated At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {companies.map((company) => (
             <TableRow key={company.id}>
-              <TableCell className="font-medium">{company.name}</TableCell>
               <TableCell>{company.id}</TableCell>
+              <TableCell>{company.company_code}</TableCell>
+              <TableCell className="font-medium">{company.name}</TableCell>
               <TableCell>{company.projects.length}</TableCell>
-              <TableCell>{formatDate(company.createdAt)}</TableCell>
-              <TableCell>{formatDate(company.updatedAt)}</TableCell>
+              <TableCell>{company.created_at_api && new Date(company.created_at_api).toLocaleString()}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -14,9 +14,7 @@ return new class extends Migration
         Schema::create('productive_time_entries', function (Blueprint $table) {
             // Primary key
             $table->string('id')->primary();
-
             $table->string('type')->default('time_entries'); // type of entry, e.g., 'time', 'expense', etc.
-
             // Basic attributes
             $table->date('date')->nullable();
             $table->timestamp('created_at_api')->nullable();
@@ -31,7 +29,7 @@ return new class extends Migration
             $table->datetime('approved_at')->nullable();
             $table->timestamp('updated_at_api')->nullable();
             $table->unsignedBigInteger('calendar_event_id')->nullable();
-            $table->unsignedBigInteger('invoice_attribution_id')->nullable();
+            $table->foreignId('invoice_attribution_id')->nullable();
             $table->boolean('invoiced')->nullable();
             $table->boolean('overhead')->nullable();
             $table->boolean('rejected')->nullable();
@@ -44,20 +42,19 @@ return new class extends Migration
             $table->string('currency_normalized', 3)->nullable();
 
             // Foreign keys (nullable to support partial data fetches)
-            $table->string('organization_id')->nullable();
-            $table->string('person_id')->nullable();
-            $table->string('service_id')->nullable();
-            $table->string('task_id')->nullable();
-            $table->string('deal_id')->nullable();
-            $table->string('approver_id')->nullable();
-            $table->string('updater_id')->nullable();
-            $table->string('rejecter_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('last_actor_id')->nullable();
-            $table->string('person_subsidiary_id')->nullable();
-            $table->string('deal_subsidiary_id')->nullable();
-            $table->string('timesheet_id')->nullable();
-            $table->string('productive_id')->nullable();
+            $table->foreignId('organization_id')->nullable();
+            $table->foreignId('person_id')->nullable();
+            $table->foreignId('service_id')->nullable();
+            $table->foreignId('task_id')->nullable();
+            $table->foreignId('deal_id')->nullable();
+            $table->foreignId('approver_id')->nullable();
+            $table->foreignId('updater_id')->nullable();
+            $table->foreignId('rejecter_id')->nullable();
+            $table->foreignId('creator_id')->nullable();
+            $table->foreignId('last_actor_id')->nullable();
+            $table->foreignId('person_subsidiary_id')->nullable();
+            $table->foreignId('deal_subsidiary_id')->nullable();
+            $table->foreignId('timesheet_id')->nullable();
 
             $table->timestamps();
 

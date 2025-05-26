@@ -15,18 +15,17 @@ interface SyncStatus {
 interface ApiCompany {
     id: string;
     name: string;
-    productive_created_at: string;
-    productive_updated_at: string;
+    company_code: string | undefined;
+    created_at_api: string | undefined;
 }
 
 interface ApiProject {
     id: string;
     name: string;
-    status: number;
-    project_type: number;
+    archived_at: boolean;
+    project_type_id: number;
     company_id: string;
-    productive_created_at: string;
-    productive_updated_at: string;
+    created_at_api: string | undefined;
 }
 
 interface ApiDeal {
@@ -83,8 +82,8 @@ export const useProductiveStore = create<ProductiveStore>((set, get) => ({
                     id: company.id,
                     name: company.name,
                     projects: [],
-                    updatedAt: company.productive_updated_at,
-                    createdAt: company.productive_created_at
+                    company_code: company.company_code,
+                    created_at_api: company.created_at_api
                 };
             });
 
@@ -94,11 +93,10 @@ export const useProductiveStore = create<ProductiveStore>((set, get) => ({
                 projects[projectId] = {
                     id: projectId,
                     name: project.name,
-                    status: project.status,
-                    projectType: project.project_type,
-                    companyId: project.company_id,
-                    updatedAt: project.productive_updated_at,
-                    createdAt: project.productive_created_at
+                    archived_at: project.archived_at,
+                    project_type_id: project.project_type_id,
+                    company_id: project.company_id,
+                    created_at_api: project.created_at_api,
                 };
 
                 // Link project to company

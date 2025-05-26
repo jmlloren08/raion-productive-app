@@ -53,7 +53,7 @@ export default function Dashboard() {
 
     const filteredProjects = projectsArray.filter(project =>
         project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (companies[project.companyId]?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (companies[project.company_id]?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const filteredDeals = dealsArray.filter(deal =>
@@ -114,12 +114,13 @@ export default function Dashboard() {
                                 setCurrentPage(1);
                             }}
                         >
-                            <TabsList>                        <TabsTrigger value="companies">Companies</TabsTrigger>
-                        <TabsTrigger value="projects">Projects</TabsTrigger>
-                        <TabsTrigger value="deals">Deals</TabsTrigger>
-                        <TabsTrigger value="time-entries">Time Entries</TabsTrigger>
-                        <TabsTrigger value="time-entry-versions">Time Entry Versions</TabsTrigger>
-                    </TabsList>
+                            <TabsList>
+                                <TabsTrigger value="companies">Companies</TabsTrigger>
+                                <TabsTrigger value="projects">Projects</TabsTrigger>
+                                <TabsTrigger value="deals">Deals</TabsTrigger>
+                                <TabsTrigger value="time-entries">Time Entries</TabsTrigger>
+                                <TabsTrigger value="time-entry-versions">Time Entry Versions</TabsTrigger>
+                            </TabsList>
                         </Tabs>
                         <SyncButton />
                     </div>

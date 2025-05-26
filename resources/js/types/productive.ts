@@ -53,18 +53,17 @@ export type Company = {
     id: string;
     name: string;
     projects: string[]; // Array of project IDs
-    updatedAt: string | undefined;
-    createdAt: string | undefined;
+    company_code: string | undefined;
+    created_at_api: string | undefined;
 };
 
 export type Project = {
     id: string;
     name: string;
-    status: number; // 1: active, 2: archived
-    projectType: number; // 1: internal, 2: client
-    companyId: string;
-    updatedAt: string | undefined;
-    createdAt: string | undefined;
+    archived_at: boolean; // 1: active, 2: archived
+    project_type_id: number; // 1: internal, 2: client
+    company_id: string;
+    created_at_api: string | undefined;
 };
 
 // Deal Schema
