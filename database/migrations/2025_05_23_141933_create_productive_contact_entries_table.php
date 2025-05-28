@@ -12,12 +12,12 @@ return new class extends Migration
     {
         Schema::create('productive_contact_entries', function (Blueprint $table) {
             // Primary key
-            $table->id();
-            $table->string('type_name')->default('contact_entries'); // type of event, e.g., 'meeting', 'call', etc.
+            $table->id('id')->primary();
+            $table->string('type')->default('contact_entries'); // type of event, e.g., 'meeting', 'call', etc.
             // Core attributes
-            $table->string('contactable_type')->nullable();
-            $table->string('type')->nullable();
-            $table->string('name')->nullable();
+            $table->string('contactable_type');
+            $table->string('type_name');
+            $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('website')->nullable();
@@ -27,14 +27,13 @@ return new class extends Migration
             $table->string('zipcode')->nullable();
             $table->string('country')->nullable();
             $table->string('vat')->nullable();
-            $table->string('billing_address')->nullable();
-            // Foreign keys without constraints - we'll add constraints in a separate migration
-            $table->unsignedBigInteger('organization_id')->nullable();
-            $table->unsignedBigInteger('company_id')->nullable();
-            $table->unsignedBigInteger('person_id')->nullable();
-            $table->unsignedBigInteger('invoice_id')->nullable();
-            $table->unsignedBigInteger('subsidiary_id')->nullable();
-            $table->unsignedBigInteger('purchase_order_id')->nullable();
+            $table->boolean('billing_address')->default(false)->nullable();
+            
+            $table->string('company_id')->nullable();
+            $table->string('person_id')->nullable();
+            $table->string('invoice_id')->nullable();
+            $table->string('subsidiary_id')->nullable();
+            $table->string('purchase_order_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

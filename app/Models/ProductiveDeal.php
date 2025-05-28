@@ -112,16 +112,22 @@ class ProductiveDeal extends Model
         'creator_id',
         'company_id',
         'document_type_id',
+        'proposal_document_type',
         'responsible_id',
         'deal_status_id',
         'project_id',
         'lost_reason_id',
         'contract_id',
         'contact_id',
-        'template_id',
+        'subsidiary_id',
+        'template',
         'tax_rate_id',
-        'origin_deal_id',
+        'pipeline',
+        'origin_deal',
         'apa_id',
+        'next_todo',
+        'custom_field_people',
+        'custom_field_attachments',
     ];
 
     protected $casts = [
@@ -217,7 +223,7 @@ class ProductiveDeal extends Model
      */
     public function contact(): BelongsTo
     {
-        return $this->belongsTo(ProductiveContact::class, 'contact_id');
+        return $this->belongsTo(ProductiveContactEntry::class, 'contact_id');
     }
 
     /**
@@ -229,27 +235,11 @@ class ProductiveDeal extends Model
     }
 
     /**
-     * Get the template associated with the deal.
-     */
-    public function template(): BelongsTo
-    {
-        return $this->belongsTo(ProductiveTemplate::class, 'template_id');
-    }
-
-    /**
      * Get the tax rate associated with the deal.
      */
     public function taxRate(): BelongsTo
     {
         return $this->belongsTo(ProductiveTaxRate::class, 'tax_rate_id');
-    }
-
-    /**
-     * Get the origin deal associated with the deal.
-     */
-    public function originDeal(): BelongsTo
-    {
-        return $this->belongsTo(ProductiveDeal::class, 'origin_deal_id');
     }
 
     /**

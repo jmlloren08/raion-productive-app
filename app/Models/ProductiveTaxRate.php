@@ -26,6 +26,7 @@ class ProductiveTaxRate extends Model
         'secondary_component_name',
         'secondary_component_value',
         'archived_at',
+        
         'subsidiary_id'
     ];
 

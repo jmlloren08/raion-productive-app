@@ -30,22 +30,8 @@ class ProductiveSubsidiary extends Model
         'peppol_id',
         'export_integration_type_id',
         'invoice_logo_url',
-        'bill_from_id',
-        'custom_domain_id',
-        'default_tax_rate_id',
-        'integration_id'
-    ];
-
-    protected $nullable = [
-        'invoice_number_format',
-        'invoice_number_scope',
-        'archived_at',
-        'einvoice_payment_means_type_id',
-        'einvoice_download_format_id',
-        'peppol_id',
-        'export_integration_type_id',
-        'invoice_logo_url',
-        'bill_from_id',
+        
+        'contact_entry_id',
         'custom_domain_id',
         'default_tax_rate_id',
         'integration_id'
@@ -57,11 +43,11 @@ class ProductiveSubsidiary extends Model
     ];
 
     /**
-     * Get the bill_from_id (contact_entries) associated with the subsidiary.
+     * Get the contact_entry_id (contact_entries) associated with the subsidiary.
      */
-    public function billFrom(): BelongsTo
+    public function contactEntry(): BelongsTo
     {
-        return $this->belongsTo(ProductiveContactEntry::class, 'bill_from_id');
+        return $this->belongsTo(ProductiveContactEntry::class, 'contact_entry_id');
     }
 
     /**

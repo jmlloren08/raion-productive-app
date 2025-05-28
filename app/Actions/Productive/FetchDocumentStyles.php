@@ -3,6 +3,7 @@
 namespace App\Actions\Productive;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class FetchDocumentStyles extends AbstractAction
 {
@@ -33,14 +34,14 @@ class FetchDocumentStyles extends AbstractAction
      */
     public function handle(array $parameters = []): array
     {
-        $client = $parameters['client'] ?? null;
         $command = $parameters['command'] ?? null;
+        $apiClient = $parameters['apiClient'] ?? null;
 
-        if (!$client) {
+        if (!$apiClient) {
             return [
                 'success' => false,
                 'document_styles' => [],
-                'error' => 'Client not provided'
+                'error' => 'API client is required'
             ];
         }
 
@@ -48,6 +49,7 @@ class FetchDocumentStyles extends AbstractAction
             if ($command instanceof Command) {
                 $command->info('Fetching document styles...');
             }
+
             $allDocumentStyles = [];
             $page = 1;
             $pageSize = 100;
@@ -55,14 +57,19 @@ class FetchDocumentStyles extends AbstractAction
             $includeParam = implode(',', $this->includeRelationships);
 
             while ($hasMorePages) {
-                try {                    // Following Productive API docs for document styles
-                    $response = $client->get("document_styles", [
+                try {
+                    // Following Productive API docs for document styles
+                    $response = $apiClient->get("document_styles", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
-                        ]
+                        ],
                     ])->throw();
+
+                    if (!$response->successful()) {
+                        throw new \Exception('Failed to fetch document styles: ' . $response->body());
+                    }
 
                     $responseBody = $response->json();
 
@@ -77,6 +84,7 @@ class FetchDocumentStyles extends AbstractAction
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
+
                     $documentStyles = $responseBody['data'];
 
                     // Process included data if available
@@ -104,13 +112,16 @@ class FetchDocumentStyles extends AbstractAction
                         }
                     }
 
+                    // Log progress
                     if ($command instanceof Command) {
                         $command->info("Fetched " . count($documentStyles) . " document styles from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
                         $command->error("Failed to fetch document styles page {$page}: " . $e->getMessage());
-                    }                    // If 'include' parameter is causing problems, try with fallback includes
+                    }
+
+                    // If 'include' parameter is causing problems, try with fallback includes
                     if (strpos($e->getMessage(), 'include') !== false) {
                         foreach ($this->fallbackIncludes as $fallbackInclude) {
                             if (implode(',', $fallbackInclude) !== $includeParam) {
@@ -147,6 +158,9 @@ class FetchDocumentStyles extends AbstractAction
             if ($command instanceof Command) {
                 $command->error("Error in document styles fetch process: " . $e->getMessage());
             }
+
+            Log::error("Error in document styles fetch process: " . $e->getMessage());
+
             return [
                 'success' => false,
                 'document_styles' => [],
@@ -168,7 +182,10 @@ class FetchDocumentStyles extends AbstractAction
         foreach ($documentStyles as $documentStyle) {
             if (isset($documentStyle['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
-                    if (isset($documentStyle['relationships'][$relationship]['data']['id'])) {
+                    if (
+                        isset($documentStyle['relationships'][$relationship]['data']['id']) ||
+                        (isset($documentStyle['relationships'][$relationship]['data']) && is_array($documentStyle['relationships'][$relationship]['data']))
+                    ) {
                         $stats[$relationship]++;
                     }
                 }

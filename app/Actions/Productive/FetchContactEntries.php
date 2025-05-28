@@ -3,20 +3,20 @@
 namespace App\Actions\Productive;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-class FetchSubsidiaries extends AbstractAction
+class FetchContactEntries extends AbstractAction
 {
     /**
-     * Define include relationships for subsidiaries
+     * Define include relationships for contact entries
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'bill_from',
-        'custom_domain',
-        'default_tax_rate',
-        'integration'
+        'company',
+        'person',
+        'subsidiary',   
+        'purchase_order',
     ];
 
     /**
@@ -25,38 +25,38 @@ class FetchSubsidiaries extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['bill_from'],
-        ['custom_domain'],
-        ['default_tax_rate'],
-        ['integration'],
+        ['company'],
+        ['person'],
+        ['subsidiary'],
+        ['purchase_order'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch subsidiaries from the Productive API
+     * Fetch contact entries from the Productive API
      *
      * @param array $parameters
      * @return array
      */
     public function handle(array $parameters = []): array
     {
-        $client = $parameters['client'] ?? null;
         $command = $parameters['command'] ?? null;
+        $apiClient = $parameters['apiClient'] ?? null;
 
-        if (!$client) {
+        if (!$apiClient) {
             return [
                 'success' => false,
-                'subsidiaries' => [],
-                'error' => 'Client not provided'
+                'contact_entries' => [],
+                'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching subsidiaries...');
+                $command->info('Fetching contact entries...');
             }
 
-            $allSubsidiaries = [];
+            $allContactEntries = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -64,18 +64,20 @@ class FetchSubsidiaries extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for subsidiaries
-                    $response = $client->get("subsidiaries", [
+                    $response = $apiClient->get("contact_entries", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                        'sort' => 'name',
                     ])->throw();
 
+                    if (!$response->successful()) {
+                        throw new \Exception('Failed to fetch contact entries: ' . $response->body());
+                    }
+
                     $responseBody = $response->json();
-                    
+
                     if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
                         if ($command instanceof Command) {
                             $command->error("Invalid API response format on page {$page}. Missing 'data' array.");
@@ -83,22 +85,22 @@ class FetchSubsidiaries extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'subsidiaries' => [],
+                            'contact_entries' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $subsidiaries = $responseBody['data'];
-                    
+                    $contactEntries = $responseBody['data'];
+
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $subsidiaries = $processIncludedAction->handle([
+                    $contactEntries = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $subsidiaries,
+                        'resources' => $contactEntries,
                         'command' => $command
                     ]);
 
-                    $allSubsidiaries = array_merge($allSubsidiaries, $subsidiaries);
+                    $allContactEntries = array_merge($allContactEntries, $contactEntries);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -106,22 +108,22 @@ class FetchSubsidiaries extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($subsidiaries) < $pageSize) {
+                    if (count($contactEntries) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching subsidiaries page {$page}...");
+                            $command->info("Fetching contact entries page {$page}...");
                         }
                     }
 
+                    // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($subsidiaries) . " subsidiaries from page " . ($page - 1));
+                        $command->info("Fetched " . count($contactEntries) . " contact entries from page " . ($page - 1));
                     }
-
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch subsidiaries page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch contact entries page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -139,52 +141,56 @@ class FetchSubsidiaries extends AbstractAction
 
                     return [
                         'success' => false,
-                        'subsidiaries' => [],
-                        'error' => 'Error fetching subsidiaries page ' . $page . ': ' . $e->getMessage()
+                        'contact_entries' => [],
+                        'error' => 'Error fetching contact entries page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allSubsidiaries) . ' subsidiaries in total');
-                
+                $command->info('Found ' . count($allContactEntries) . ' contact entries in total');
+
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allSubsidiaries);
-                $this->logRelationshipStats($relationshipStats, count($allSubsidiaries), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allContactEntries);
+                $this->logRelationshipStats($relationshipStats, count($allContactEntries), $command);
             }
 
             return [
                 'success' => true,
-                'subsidiaries' => $allSubsidiaries
+                'contact_entries' => $allContactEntries
             ];
-
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in subsidiaries fetch process: " . $e->getMessage());
+                $command->error("Error in contact entries fetch process: " . $e->getMessage());
             }
+
+            Log::error("Error in contact entries fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'subsidiaries' => [],
-                'error' => 'Error in subsidiaries fetch process: ' . $e->getMessage()
+                'contact_entries' => [],
+                'error' => 'Error in contact entries fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for subsidiaries
+     * Calculate relationship statistics for contact entries
      *
-     * @param array $subsidiaries
+     * @param array $contactEntries
      * @return array
      */
-    protected function calculateRelationshipStats(array $subsidiaries): array
+    protected function calculateRelationshipStats(array $contactEntries): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($subsidiaries as $subsidiary) {
-            if (isset($subsidiary['relationships'])) {
+        foreach ($contactEntries as $contactEntry) {
+            if (isset($contactEntry['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
-                    if (isset($subsidiary['relationships'][$relationship]['data']['id'])) {
+                    if (
+                        isset($contactEntry['relationships'][$relationship]['data']['id']) ||
+                        (isset($contactEntry['relationships'][$relationship]['data']) && is_array($contactEntry['relationships'][$relationship]['data']))
+                    ) {
                         $stats[$relationship]++;
                     }
                 }
@@ -198,16 +204,16 @@ class FetchSubsidiaries extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalSubsidiaries
+     * @param int $totalContactEntries
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalSubsidiaries, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalContactEntries, Command $command): void
     {
-        if ($totalSubsidiaries > 0) {
+        if ($totalContactEntries > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalSubsidiaries) * 100, 2);
-                $command->info("Subsidiaries with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalContactEntries) * 100, 2);
+                $command->info("Contact entries with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

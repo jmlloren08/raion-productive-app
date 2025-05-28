@@ -27,6 +27,7 @@ class ProductiveDocumentStyle extends Model
         'type',
         'name',
         'styles',
+        
         'attachment_id'
     ];
 

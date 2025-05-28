@@ -7,6 +7,7 @@ use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveDocumentStyle;
 use App\Models\ProductiveAttachment;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -29,75 +30,76 @@ class StoreDocumentType extends AbstractAction
         'document_style_id' => ProductiveDocumentStyle::class,
         'attachment_id' => ProductiveAttachment::class
     ];
+
     /**
-     * Execute the action to store a document type from Productive API data.
-     * Expected data structure:
-     * {
-     *     "id": string,
-     *     "type": "document_types",
-     *     "attributes": {
-     *         "name": string,
-     *         "tax1_name": string,
-     *         "tax1_value": string,
-     *         ...
-     *     }
-     * }
+     * Store a document type in the database
      *
      * @param array $parameters
-     * @return void
+     * @return bool
      * @throws \Exception
      */
-    public function handle(array $parameters = []): void
+    public function handle(array $parameters = []): bool
     {
         $documentTypeData = $parameters['documentTypeData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        // Validate basic data structure
-        if (!isset($documentTypeData['id'])) {
-            throw new \Exception("Missing required field 'id' in root data object");
+        if (!$documentTypeData) {
+            throw new \Exception('Document type data is required');
         }
-
-        $attributes = $documentTypeData['attributes'] ?? [];
-        $relationships = $documentTypeData['relationships'] ?? [];
-
-        // Validate required fields
-        $this->validateRequiredFields($attributes, $documentTypeData['id'], $command);
-
-        // Prepare base data
-        $data = [
-            'id' => $documentTypeData['id'],
-            'type' => $documentTypeData['type'] ?? 'document_types',
-        ];
-
-        // Add all attributes with safe fallbacks
-        foreach ($attributes as $key => $value) {
-            $data[$key] = $value;
-        }
-
-        // Handle JSON fields
-        $this->handleJsonFields($data);
-
-        // Handle foreign key relationships
-        $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Document Type', $command);
-
-        // Validate data types
-        $this->validateDataTypes($data);
 
         try {
+            if ($command instanceof Command) {
+                $command->info("Processing document type: {$documentTypeData['id']}");
+            }
+
+            // Validate basic data structure
+            if (!isset($documentTypeData['id'])) {
+                throw new \Exception("Missing required field 'id' in root data object");
+            }
+
+            $attributes = $documentTypeData['attributes'] ?? [];
+            $relationships = $documentTypeData['relationships'] ?? [];
+
+            // Validate required fields
+            $this->validateRequiredFields($attributes, $documentTypeData['id'], $command);
+
+            // Prepare base data
+            $data = [
+                'id' => $documentTypeData['id'],
+                'type' => $attributes['type'] ?? $documentTypeData['type'] ?? 'document_types',
+            ];
+
+            // Add all attributes with safe fallbacks
+            foreach ($attributes as $key => $value) {
+                $data[$key] = $value;
+            }
+
+            // Handle JSON fields
+            $this->handleJsonFields($data);
+
+            // Handle foreign key relationships
+            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Document Type', $command);
+
+            // Validate data types
+            $this->validateDataTypes($data);
+
+            // Create or update document type
             ProductiveDocumentType::updateOrCreate(
                 ['id' => $documentTypeData['id']],
                 $data
             );
 
-            if ($command) {
-                $command->info("Stored document type '{$attributes['name']}' (ID: {$documentTypeData['id']})");
+            if ($command instanceof Command) {
+                $command->info("Successfully stored document type: {$attributes['name']} (ID: {$documentTypeData['id']})");
             }
+
+            return true;
+
         } catch (\Exception $e) {
-            if ($command) {
-                $command->error("Failed to store document type '{$attributes['name']}' (ID: {$documentTypeData['id']})");
-                $command->error("Error: " . $e->getMessage());
-                $command->warn("Document type data: " . json_encode($data));
+            if ($command instanceof Command) {
+                $command->error("Failed to store document type {$documentTypeData['id']}: " . $e->getMessage());
             }
+            Log::error("Failed to store document type {$documentTypeData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -160,16 +162,37 @@ class StoreDocumentType extends AbstractAction
      */
     protected function handleForeignKeys(array $relationships, array &$data, string $documentTypeName, ?Command $command): void
     {
-        foreach ($this->foreignKeys as $key => $modelClass) {
-            if (isset($relationships[$key]['data']['id'])) {
-                $id = $relationships[$key]['data']['id'];
+        // Map relationship keys to their corresponding data keys
+        $relationshipMap = [
+            'subsidiary' => 'subsidiary_id',
+            'document_style' => 'document_style_id',
+            'attachments' => 'attachment_id'
+        ];
+
+        foreach ($relationshipMap as $apiKey => $dbKey) {
+            if (isset($relationships[$apiKey]['data']['id'])) {
+                $id = $relationships[$apiKey]['data']['id'];
+                if ($command) {
+                    $command->info("Processing relationship {$apiKey} with ID: {$id}");
+                }
+
+                // Get the model class for this relationship
+                $modelClass = $this->foreignKeys[$dbKey];
+
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Document type '{$documentTypeName}' is linked to {$key}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Document type '{$documentTypeName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
-                    $data[$key] = null;
+                    $data[$dbKey] = null;
                 } else {
-                    $data[$key] = $id;
+                    $data[$dbKey] = $id;
+                    if ($command) {
+                        $command->info("Successfully linked {$apiKey} with ID: {$id}");
+                    }
+                }
+            } else {
+                if ($command) {
+                    $command->info("No relationship data found for {$apiKey}");
                 }
             }
         }
@@ -205,7 +228,6 @@ class StoreDocumentType extends AbstractAction
             'email_subject' => 'nullable|string',
             'email_data' => 'nullable|json',
             'dual_currency' => 'boolean',
-            'organization_id' => 'nullable|string',
             'subsidiary_id' => 'nullable|string',
             'document_style_id' => 'nullable|string',
             'attachment_id' => 'nullable|string'

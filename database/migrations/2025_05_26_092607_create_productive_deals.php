@@ -107,22 +107,22 @@ return new class extends Migration
             $table->decimal('expense_default', 15, 2);
             $table->decimal('expense_normalized', 15, 2);
             // Relationships
-            $table->foreignId('creator_id')->nullable();
+            $table->string('creator_id')->nullable();
             $table->string('company_id')->nullable();
-            $table->foreignId('document_type_id')->nullable();
+            $table->string('document_type_id')->nullable();
             $table->json('proposal_document_type')->nullable();
-            $table->foreignId('responsible_id')->nullable();
-            $table->foreignId('deal_status_id')->nullable();
-            $table->foreignId('project_id')->nullable();
-            $table->foreignId('lost_reason_id')->nullable();
-            $table->foreignId('contract_id')->nullable();
-            $table->foreignId('contact_id')->nullable();
-            $table->foreignId('subsidiary_id')->nullable();
+            $table->string('responsible_id')->nullable();
+            $table->string('deal_status_id')->nullable();
+            $table->string('project_id')->nullable();
+            $table->string('lost_reason_id')->nullable();
+            $table->string('contract_id')->nullable();
+            $table->string('contact_id')->nullable();
+            $table->string('subsidiary_id')->nullable();
             $table->json('template')->nullable();
-            $table->foreignId('tax_rate_id')->nullable();
-            $table->foreignId('pipeline_id')->nullable();
+            $table->string('tax_rate_id')->nullable();
+            $table->string('pipeline_id')->nullable();
             $table->json('origin_deal')->nullable();
-            $table->foreignId('apa_id')->nullable();
+            $table->string('apa_id')->nullable();
             $table->json('next_todo')->nullable();
 
             $table->json('custom_field_people')->nullable();

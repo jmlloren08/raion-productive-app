@@ -3,19 +3,17 @@
 namespace App\Actions\Productive;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-class FetchDocumentTypes extends AbstractAction
+class FetchTaxRates extends AbstractAction
 {
     /**
-     * Define include relationships for document types
+     * Define include relationships for tax rates
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'subsidiary',
-        'document_style',
-        'attachments',
+        'subsidiary'
     ];
 
     /**
@@ -25,36 +23,34 @@ class FetchDocumentTypes extends AbstractAction
      */
     protected array $fallbackIncludes = [
         ['subsidiary'],
-        ['document_style'],
-        ['attachments'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch document types from the Productive API
+     * Fetch tax rates from the Productive API
      *
      * @param array $parameters
      * @return array
      */
     public function handle(array $parameters = []): array
     {
-        $client = $parameters['client'] ?? null;
         $command = $parameters['command'] ?? null;
+        $apiClient = $parameters['apiClient'] ?? null;
 
-        if (!$client) {
+        if (!$apiClient) {
             return [
                 'success' => false,
-                'document_types' => [],
-                'error' => 'Client not provided'
+                'tax_rates' => [],
+                'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching document types...');
+                $command->info('Fetching tax rates...');
             }
 
-            $allDocumentTypes = [];
+            $allTaxRates = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -62,17 +58,22 @@ class FetchDocumentTypes extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for document types
-                    $response = $client->get("document_types", [
+                    // Following Productive API docs for tax rates
+                    $response = $apiClient->get("tax_rates", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
-                        ]
+                        ],
+                        'sort' => 'name'
                     ])->throw();
 
+                    if (!$response->successful()) {
+                        throw new \Exception('Failed to fetch tax rates: ' . $response->body());
+                    }
+
                     $responseBody = $response->json();
-                    
+
                     if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
                         if ($command instanceof Command) {
                             $command->error("Invalid API response format on page {$page}. Missing 'data' array.");
@@ -80,22 +81,22 @@ class FetchDocumentTypes extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'document_types' => [],
+                            'tax_rates' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $documentTypes = $responseBody['data'];
-                    
+                    $taxRates = $responseBody['data'];
+
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $documentTypes = $processIncludedAction->handle([
+                    $taxRates = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $documentTypes,
+                        'resources' => $taxRates,
                         'command' => $command
                     ]);
 
-                    $allDocumentTypes = array_merge($allDocumentTypes, $documentTypes);
+                    $allTaxRates = array_merge($allTaxRates, $taxRates);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -103,22 +104,22 @@ class FetchDocumentTypes extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($documentTypes) < $pageSize) {
+                    if (count($taxRates) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching document types page {$page}...");
+                            $command->info("Fetching tax rates page {$page}...");
                         }
                     }
 
+                    // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($documentTypes) . " document types from page " . ($page - 1));
+                        $command->info("Fetched " . count($taxRates) . " tax rates from page " . ($page - 1));
                     }
-
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch document types page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch tax rates page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -136,52 +137,56 @@ class FetchDocumentTypes extends AbstractAction
 
                     return [
                         'success' => false,
-                        'document_types' => [],
-                        'error' => 'Error fetching document types page ' . $page . ': ' . $e->getMessage()
+                        'tax_rates' => [],
+                        'error' => 'Error fetching tax rates page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allDocumentTypes) . ' document types in total');
-                
+                $command->info('Found ' . count($allTaxRates) . ' tax rates in total');
+
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allDocumentTypes);
-                $this->logRelationshipStats($relationshipStats, count($allDocumentTypes), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allTaxRates);
+                $this->logRelationshipStats($relationshipStats, count($allTaxRates), $command);
             }
 
             return [
                 'success' => true,
-                'document_types' => $allDocumentTypes
+                'tax_rates' => $allTaxRates
             ];
-
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in document types fetch process: " . $e->getMessage());
+                $command->error("Error in tax rates fetch process: " . $e->getMessage());
             }
+
+            Log::error("Error in tax rates fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'document_types' => [],
-                'error' => 'Error in document types fetch process: ' . $e->getMessage()
+                'tax_rates' => [],
+                'error' => 'Error in tax rates fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for document types
+     * Calculate relationship statistics for tax rates
      *
-     * @param array $documentTypes
+     * @param array $taxRates
      * @return array
      */
-    protected function calculateRelationshipStats(array $documentTypes): array
+    protected function calculateRelationshipStats(array $taxRates): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($documentTypes as $documentType) {
-            if (isset($documentType['relationships'])) {
+        foreach ($taxRates as $taxRate) {
+            if (isset($taxRate['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
-                    if (isset($documentType['relationships'][$relationship]['data']['id'])) {
+                    if (
+                        isset($taxRate['relationships'][$relationship]['data']['id']) ||
+                        (isset($taxRate['relationships'][$relationship]['data']) && is_array($taxRate['relationships'][$relationship]['data']))
+                    ) {
                         $stats[$relationship]++;
                     }
                 }
@@ -195,16 +200,16 @@ class FetchDocumentTypes extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalDocumentTypes
+     * @param int $totalTaxRates
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalDocumentTypes, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalTaxRates, Command $command): void
     {
-        if ($totalDocumentTypes > 0) {
+        if ($totalTaxRates > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalDocumentTypes) * 100, 2);
-                $command->info("Document types with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalTaxRates) * 100, 2);
+                $command->info("Tax rates with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

@@ -2,10 +2,7 @@
 
 namespace App\Actions\Productive;
 
-use App\Models\ProductiveCompany;
-use App\Models\ProductiveProject;
 use App\Models\ProductiveDeal;
-use App\Models\ProductivePerson;
 use App\Models\ProductiveDocumentType;
 use App\Models\ProductiveDealStatus;
 use App\Models\ProductiveLostReason;
@@ -15,7 +12,9 @@ use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveTaxRate;
 use App\Models\ProductivePipeline;
 use App\Models\ProductiveApa;
+use App\Models\ProductiveCompany;
 use App\Models\ProductivePeople;
+use App\Models\ProductiveProject;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -29,7 +28,6 @@ class StoreDeal extends AbstractAction
     protected array $requiredFields = [
         'name',
         'date',
-        'number'
     ];
 
     /**
@@ -105,11 +103,6 @@ class StoreDeal extends AbstractAction
             // Handle foreign key relationships
             $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Deal', $command);
 
-            // Debug log final data
-            if ($command instanceof Command) {
-                $command->info("Final deal data structure prepared");
-            }
-
             // Validate data types
             $this->validateDataTypes($data);
 
@@ -121,6 +114,7 @@ class StoreDeal extends AbstractAction
 
             if ($command instanceof Command) {
                 $command->info("Successfully stored deal: {$attributes['name']} (ID: {$dealData['id']})");
+                $this->logRelationshipStatus(ProductiveDeal::find($dealData['id']), $command);
             }
 
             return true;
@@ -168,9 +162,16 @@ class StoreDeal extends AbstractAction
     protected function handleJsonFields(array &$data): void
     {
         $jsonFields = [
-            'tag_list',
+            'project_proposal_type',
+            'template',
+            'pipeline',
+            'origin_deal',
+            'next_todo',
+            'custom_field_people',
+            'custom_field_attachments',
             'custom_fields',
             'editor_config',
+            'tag_list'
         ];
 
         foreach ($jsonFields as $field) {
@@ -205,7 +206,6 @@ class StoreDeal extends AbstractAction
             'contact' => 'contact_id',
             'subsidiary' => 'subsidiary_id',
             'tax_rate' => 'tax_rate_id',
-            'pipeline' => 'pipeline_id',
             'approval_policy_assignment' => 'apa_id'
         ];
 
@@ -239,10 +239,34 @@ class StoreDeal extends AbstractAction
     }
 
     /**
+     * Log the status of relationships for a deal
+     */
+    protected function logRelationshipStatus(ProductiveDeal $deal, Command $command): void
+    {
+        $relationships = [
+            'company' => $deal->company_id,
+            'project' => $deal->project_id,
+            'creator' => $deal->creator_id,
+            'responsible' => $deal->responsible_id,
+            'deal status' => $deal->deal_status_id,
+            'pipeline' => $deal->pipeline_id,
+            'document type' => $deal->document_type_id,
+            'lost reason' => $deal->lost_reason_id,
+            'contract' => $deal->contract_id,
+            'contact' => $deal->contact_id,
+            'subsidiary' => $deal->subsidiary_id,
+            'tax rate' => $deal->tax_rate_id,
+            'apa' => $deal->apa_id
+        ];
+
+        foreach ($relationships as $name => $id) {
+            $status = $id ? 'linked' : 'not linked';
+            $command->info("Deal is {$status} to {$name}" . ($id ? " (ID: {$id})" : ''));
+        }
+    }
+
+    /**
      * Validate data types for all fields
-     *
-     * @param array $data
-     * @throws ValidationException
      */
     protected function validateDataTypes(array $data): void
     {

@@ -38,10 +38,9 @@ return new class extends Migration
             $table->json('email_data')->nullable();
             $table->boolean('dual_currency')->default(false);
             // Relationships
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('subsidiary_id')->nullable();
-            $table->foreignId('document_style_id')->nullable();
-            $table->foreignId('attachment_id')->nullable();
+            $table->string('subsidiary_id')->nullable();
+            $table->string('document_style_id')->nullable();
+            $table->string('attachment_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

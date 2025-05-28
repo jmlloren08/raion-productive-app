@@ -5,6 +5,7 @@ namespace App\Actions\Productive;
 use App\Models\ProductiveDocumentStyle;
 use App\Models\ProductiveAttachment;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -25,38 +26,38 @@ class StoreDocumentStyle extends AbstractAction
     ];
 
     /**
-     * Execute the action to store a document style from Productive API data.
-     * Expected data structure:
-     * {
-     *     "id": string,
-     *     "type": "document_styles",
-     *     "attributes": {
-     *         "name": string,
-     *         ...
-     *     }
-     * }
+     * Store a document style in the database
      *
      * @param array $parameters
-     * @return void
+     * @return bool
      * @throws \Exception
      */
-    public function handle(array $parameters = []): void
+    public function handle(array $parameters = []): bool
     {
         $documentStyleData = $parameters['documentStyleData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        // Validate basic data structure
-        if (!isset($documentStyleData['id'])) {
-            throw new \Exception("Missing required field 'id' in root data object");
-        }
         if (!$documentStyleData) {
-            throw new \Exception("No document style data provided");
+            throw new \Exception('Document style data is required');
         }
 
         try {
-            // Extract main components
+            if ($command instanceof Command) {
+                $command->info("Processing document style: {$documentStyleData['id']}");
+            }
+
+            // Validate basic data structure
+            if (!isset($documentStyleData['id'])) {
+                throw new \Exception("Missing required field 'id' in root data object");
+            }
+
             $attributes = $documentStyleData['attributes'] ?? [];
             $relationships = $documentStyleData['relationships'] ?? [];
+
+            // Add type from root level if not in attributes
+            if (!isset($attributes['type']) && isset($documentStyleData['type'])) {
+                $attributes['type'] = $documentStyleData['type'];
+            }
 
             // Validate required fields
             $this->validateRequiredFields($attributes, $documentStyleData['id'], $command);
@@ -64,7 +65,7 @@ class StoreDocumentStyle extends AbstractAction
             // Prepare base data
             $data = [
                 'id' => $documentStyleData['id'],
-                'type' => $documentStyleData['type'] ?? 'document_styles',
+                'type' => $attributes['type'] ?? $documentStyleData['type'] ?? 'document_styles',
             ];
 
             // Add all attributes with safe fallbacks
@@ -81,63 +82,50 @@ class StoreDocumentStyle extends AbstractAction
             // Validate data types
             $this->validateDataTypes($data);
 
-            try {
-                ProductiveDocumentStyle::updateOrCreate(
-                    ['id' => $documentStyleData['id']],
-                    $data
-                );
+            // Create or update document style
+            ProductiveDocumentStyle::updateOrCreate(
+                ['id' => $documentStyleData['id']],
+                $data
+            );
 
-                if ($command instanceof Command) {
-                    $command->info("Stored document style '{$attributes['name']}' (ID: {$documentStyleData['id']})");
-                }
-            } catch (\Exception $e) {
-                if ($command instanceof Command) {
-                    $command->error("Failed to store document style '{$attributes['name']}' (ID: {$documentStyleData['id']})");
-                    $command->error("Error: " . $e->getMessage());
-                    $command->warn("Document style data: " . json_encode($data));
-                }
-                throw $e;
-            }
-        } catch (ValidationException $e) {
             if ($command instanceof Command) {
-                foreach ($e->errors() as $field => $errors) {
-                    $command->error("Validation error for {$field}: " . implode(', ', $errors));
-                }
+                $command->info("Successfully stored document style: {$attributes['name']} (ID: {$documentStyleData['id']})");
             }
-            throw $e;
+
+            return true;
+
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error storing document style: " . $e->getMessage());
+                $command->error("Failed to store document style {$documentStyleData['id']}: " . $e->getMessage());
             }
+            Log::error("Failed to store document style {$documentStyleData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * Validate required fields are present
+     * Validate that all required fields are present
      *
      * @param array $attributes
-     * @param string $id
+     * @param string $documentStyleId
      * @param Command|null $command
-     * @throws ValidationException
+     * @throws \Exception
      */
-    protected function validateRequiredFields(array $attributes, string $id, ?Command $command): void
+    protected function validateRequiredFields(array $attributes, string $documentStyleId, ?Command $command): void
     {
-        $missing = [];
+        $missingFields = [];
         foreach ($this->requiredFields as $field) {
             if (!isset($attributes[$field])) {
-                $missing[] = $field;
+                $missingFields[] = $field;
             }
         }
 
-        if (!empty($missing)) {
-            $message = "Document style {$id} is missing required fields: " . implode(', ', $missing);
-            if ($command instanceof Command) {
+        if (!empty($missingFields)) {
+            $message = "Required fields missing for document style {$documentStyleId}: " . implode(', ', $missingFields);
+            if ($command) {
                 $command->error($message);
             }
-            throw ValidationException::withMessages([
-                'required_fields' => [$message]
-            ]);
+            throw new \Exception($message);
         }
     }
 
@@ -171,23 +159,42 @@ class StoreDocumentStyle extends AbstractAction
      */
     protected function handleForeignKeys(array $relationships, array &$data, string $documentStyleName, ?Command $command): void
     {
-        foreach ($this->foreignKeys as $key => $modelClass) {
-            if (isset($relationships[$key]['data']['id'])) {
-                $id = $relationships[$key]['data']['id'];
+        // Map relationship keys to their corresponding data keys
+        $relationshipMap = [
+            'attachments' => 'attachment_id'
+        ];
+
+        foreach ($relationshipMap as $apiKey => $dbKey) {
+            if (isset($relationships[$apiKey]['data']['id'])) {
+                $id = $relationships[$apiKey]['data']['id'];
+                if ($command) {
+                    $command->info("Processing relationship {$apiKey} with ID: {$id}");
+                }
+
+                // Get the model class for this relationship
+                $modelClass = $this->foreignKeys[$dbKey];
+
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Document style '{$documentStyleName}' is linked to {$key}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Document style '{$documentStyleName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
-                    $data[$key] = null;
+                    $data[$dbKey] = null;
                 } else {
-                    $data[$key] = $id;
+                    $data[$dbKey] = $id;
+                    if ($command) {
+                        $command->info("Successfully linked {$apiKey} with ID: {$id}");
+                    }
+                }
+            } else {
+                if ($command) {
+                    $command->info("No relationship data found for {$apiKey}");
                 }
             }
         }
     }
 
     /**
-     * Validate data types for document style fields
+     * Validate data types for all fields
      *
      * @param array $data
      * @throws ValidationException
@@ -196,15 +203,15 @@ class StoreDocumentStyle extends AbstractAction
     {
         $rules = [
             'name' => 'required|string',
-            'styles' => 'nullable|array',
-            'type' => 'string',
-            'attachment_id' => 'nullable|string',
+            'styles' => 'nullable|json',
+
+            'attachment_id' => 'nullable|string'
         ];
 
         $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
-            throw ValidationException::withMessages($validator->errors()->toArray());
+            throw new ValidationException($validator);
         }
     }
 }
