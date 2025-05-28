@@ -71,7 +71,7 @@ return new class extends Migration
             $table->decimal('total_amount_with_tax_normalized', 10, 2);
             // Relationships
             $table->foreignId('organization_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             $table->foreignId('service_type_id')->nullable();
             $table->foreignId('person_id')->nullable();
             $table->foreignId('creator_id')->nullable();

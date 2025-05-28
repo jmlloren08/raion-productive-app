@@ -13,15 +13,13 @@ return new class extends Migration
     {
         Schema::create('productive_workflows', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->string('id')->primary();
             $table->string('type')->default('workflow'); // type of workflow, e.g., 'project', 'task', etc.
-            // Core attributes
             // Core attributes
             $table->string('name');
             $table->timestamp('archived_at')->nullable();
             // Relationships
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('workflow_status_id')->nullable();
+            $table->string('workflow_status_id')->nullable();
            
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

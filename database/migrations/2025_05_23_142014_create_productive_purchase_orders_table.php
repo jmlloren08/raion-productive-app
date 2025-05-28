@@ -45,7 +45,7 @@ return new class extends Migration
             // Foreign keys without constraints - we'll add constraints in a separate migration
             $table->foreignId('organization_id')->nullable();
             $table->json('vendor')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             $table->foreignId('creator_id')->nullable();
             $table->foreignId('document_type_id')->nullable();
             $table->foreignId('attachment_id')->nullable();

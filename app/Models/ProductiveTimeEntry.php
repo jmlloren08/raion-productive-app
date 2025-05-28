@@ -10,8 +10,11 @@ class ProductiveTimeEntry extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'productive_time_entries';
+
     protected $keyType = 'string';
     public $incrementing = false;
+    public $timestamps = false;
 
     protected $fillable = [
         'id',
@@ -40,11 +43,9 @@ class ProductiveTimeEntry extends Model
         'currency',
         'currency_default',
         'currency_normalized',
-        'organization_id',
         'person_id',
         'service_id',
         'task_id',
-        'deal_id',
         'approver_id',
         'updater_id',
         'rejecter_id',
@@ -73,42 +74,90 @@ class ProductiveTimeEntry extends Model
     ];
 
     /**
-     * Get the organization that owns the time entry.
+     * Get the person associated with the time entry.
      */
-    public function organization(): BelongsTo
+    public function person(): BelongsTo
     {
-        return $this->belongsTo(ProductiveOrganization::class, 'organization_id');
+        return $this->belongsTo(ProductivePeople::class, 'person_id');
     }
 
     /**
-     * Get the deal associated with the time entry.
+     * Get the service associated with the time entry.
      */
-    public function deal(): BelongsTo
+    public function service(): BelongsTo
     {
-        return $this->belongsTo(ProductiveDeal::class, 'deal_id');
+        return $this->belongsTo(ProductiveService::class, 'service_id');
     }
 
     /**
-     * Get the project associated with the time entry.
+     * Get the task associated with the time entry.
      */
-    public function project(): BelongsTo
+    public function task(): BelongsTo
     {
-        return $this->belongsTo(ProductiveProject::class, 'project_id');
+        return $this->belongsTo(ProductiveTask::class, 'task_id');
     }
 
     /**
-     * Get the approver of the time entry.
+     * Get the approver associated with the time entry.
      */
     public function approver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'approver_id');
+        return $this->belongsTo(ProductivePeople::class, 'approver_id');
     }
 
     /**
-     * Get the person who created the time entry.
+     * Get the updater associated with the time entry.
+     */
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(ProductivePeople::class, 'updater_id');
+    }
+
+    /**
+     * Get the rejecter associated with the time entry.
+     */
+    public function rejecter(): BelongsTo
+    {
+        return $this->belongsTo(ProductivePeople::class, 'rejecter_id');
+    }
+
+    /**
+     * Get the creator associated with the time entry.
      */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'creator_id');
+        return $this->belongsTo(ProductivePeople::class, 'creator_id');
+    }
+
+    /**
+     * Get the last actor associated with the time entry.
+     */
+    public function lastActor(): BelongsTo
+    {
+        return $this->belongsTo(ProductivePeople::class, 'last_actor_id');
+    }
+
+    /**
+     * Get the person subsidiary associated with the time entry.
+     */
+    public function personSubsidiary(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveSubsidiary::class, 'person_subsidiary_id');
+    }
+
+    /**
+     * Get the deal subsidiary associated with the time entry.
+     */
+    public function dealSubsidiary(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveSubsidiary::class, 'deal_subsidiary_id');
+    }
+
+    /**
+     * Get the timesheet associated with the time entry.
+     */
+    public function timesheet(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveTimesheet::class, 'timesheet_id');
     }
 }

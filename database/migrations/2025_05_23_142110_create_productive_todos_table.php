@@ -27,7 +27,7 @@ return new class extends Migration
             // Relationships
             $table->foreignId('organization_id')->nullable();
             $table->foreignId('assignee_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             $table->foreignId('task_id')->nullable();
             
             $table->timestamps();

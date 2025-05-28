@@ -3,9 +3,57 @@
 namespace App\Actions\Productive;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class FetchDeals extends AbstractAction
 {
+    /**
+     * Define include relationships for deals
+     * 
+     * @var array
+     */    
+    protected array $includeRelationships = [
+        'creator',
+        'company',
+        'document_type',
+        'responsible',
+        'deal_status',
+        'project',
+        'lost_reason',
+        'contract',
+        'contact',
+        'subsidiary',
+        'template',
+        'tax_rate',
+        'origin_deal',
+        'approval_policy_assignment',
+        'next_todo'
+    ];
+
+    /**
+     * Define fallback include relationships if the full set fails
+     * 
+     * @var array
+     */
+    protected array $fallbackIncludes = [
+        ['creator'],
+        ['company'],
+        ['document_type'],
+        ['responsible'],
+        ['deal_status'],
+        ['project'],
+        ['lost_reason'],
+        ['contract'],
+        ['contact'],
+        ['subsidiary'],
+        ['template'],
+        ['tax_rate'],
+        ['origin_deal'],
+        ['approval_policy_assignment'],
+        ['next_todo'],
+        []  // Empty array means no includes
+    ];
+
     /**
      * Fetch deals from the Productive API
      *
@@ -14,14 +62,14 @@ class FetchDeals extends AbstractAction
      */
     public function handle(array $parameters = []): array
     {
-        $client = $parameters['client'] ?? null;
         $command = $parameters['command'] ?? null;
+        $apiClient = $parameters['apiClient'] ?? null;
 
-        if (!$client) {
+        if (!$apiClient) {
             return [
                 'success' => false,
                 'deals' => [],
-                'error' => 'Client not provided'
+                'error' => 'API client is required'
             ];
         }
 
@@ -34,12 +82,12 @@ class FetchDeals extends AbstractAction
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
-            $includeParam = 'company,project'; // Include both company and project relationships
+            $includeParam = implode(',', $this->includeRelationships);
 
             while ($hasMorePages) {
                 try {
                     // Following Productive API docs for deals
-                    $response = $client->get("deals", [
+                    $response = $apiClient->get("deals", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
@@ -48,6 +96,10 @@ class FetchDeals extends AbstractAction
                         'sort' => 'name'
                     ])->throw();
 
+                    if (!$response->successful()) {
+                        throw new \Exception('Failed to fetch deals: ' . $response->body());
+                    }
+
                     $responseBody = $response->json();
 
                     if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
@@ -55,7 +107,11 @@ class FetchDeals extends AbstractAction
                             $command->error("Invalid API response format on page {$page}. Missing 'data' array.");
                             $command->warn("Response format: " . json_encode(array_keys($responseBody)));
                         }
-                        continue; // Skip this page and try the next one
+                        return [
+                            'success' => false,
+                            'deals' => [],
+                            'error' => "Invalid API response format on page {$page}"
+                        ];
                     }
 
                     $deals = $responseBody['data'];
@@ -70,14 +126,9 @@ class FetchDeals extends AbstractAction
 
                     $allDeals = array_merge($allDeals, $deals);
 
-                    // If 'included' data is present, log it for debugging
+                    // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
-                        $includedTypes = [];
-                        foreach ($responseBody['included'] as $included) {
-                            $type = $included['type'] ?? 'unknown';
-                            $includedTypes[$type] = ($includedTypes[$type] ?? 0) + 1;
-                        }
-                        $command->info("Page {$page} included data: " . json_encode($includedTypes));
+                        $this->logIncludedData($responseBody['included'], $page, $command);
                     }
 
                     // Check if we need to fetch more pages
@@ -89,73 +140,43 @@ class FetchDeals extends AbstractAction
                             $command->info("Fetching deals page {$page}...");
                         }
                     }
+
+                    // Log progress
+                    if ($command instanceof Command) {
+                        $command->info("Fetched " . count($deals) . " deals from page " . ($page - 1));
+                    }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
                         $command->error("Failed to fetch deals page {$page}: " . $e->getMessage());
                     }
 
-                    // If 'include' parameter is causing problems, try with fewer includes
+                    // If 'include' parameter is causing problems, try with fallback includes
                     if (strpos($e->getMessage(), 'include') !== false) {
-                        if ($includeParam === 'company,project') {
-                            if ($command instanceof Command) {
-                                $command->warn("Retrying with only 'company' include parameter");
+                        foreach ($this->fallbackIncludes as $fallbackInclude) {
+                            if (implode(',', $fallbackInclude) !== $includeParam) {
+                                if ($command instanceof Command) {
+                                    $command->warn("Retrying with include parameter: " . ($fallbackInclude ? implode(',', $fallbackInclude) : 'none'));
+                                }
+                                $includeParam = implode(',', $fallbackInclude);
+                                continue 2; // Continue the outer while loop
                             }
-                            $includeParam = 'company';
-                            continue; // Retry the current page with only company
-                        } else if ($includeParam === 'company') {
-                            if ($command instanceof Command) {
-                                $command->warn("Retrying with only 'project' include parameter");
-                            }
-                            $includeParam = 'project';
-                            continue; // Retry with only project
-                        } else if ($includeParam === 'project') {
-                            if ($command instanceof Command) {
-                                $command->warn("Retrying without include parameters");
-                            }
-                            $includeParam = '';
-                            continue; // Retry without includes
                         }
                     }
 
-                    if ($page > 1) {
-                        // We already have some data, so we can continue with what we have
-                        if ($command instanceof Command) {
-                            $command->warn("Proceeding with partial data ({$page} pages fetched)");
-                        }
-                        $hasMorePages = false;
-                    } else {
-                        // First page failed, cannot continue
-                        throw $e;
-                    }
+                    return [
+                        'success' => false,
+                        'deals' => [],
+                        'error' => 'Error fetching deals page ' . $page . ': ' . $e->getMessage()
+                    ];
                 }
             }
 
             if ($command instanceof Command) {
                 $command->info('Found ' . count($allDeals) . ' deals in total');
 
-                // Count deals with company and project relationships
-                $dealsWithCompany = 0;
-                $dealsWithProject = 0;
-                $dealsWithBoth = 0;
-
-                foreach ($allDeals as $deal) {
-                    $hasCompany = isset($deal['relationships']['company']['data']['id']);
-                    $hasProject = isset($deal['relationships']['project']['data']['id']);
-
-                    if ($hasCompany) $dealsWithCompany++;
-                    if ($hasProject) $dealsWithProject++;
-                    if ($hasCompany && $hasProject) $dealsWithBoth++;
-                }
-
-                $totalDeals = count($allDeals);
-                if ($totalDeals > 0) {
-                    $command->info("Deals with company relationship: {$dealsWithCompany} of {$totalDeals} (" .
-                        round(($dealsWithCompany / $totalDeals) * 100, 2) . "%)");
-                    $command->info("Deals with project relationship: {$dealsWithProject} of {$totalDeals} (" .
-                        round(($dealsWithProject / $totalDeals) * 100, 2) . "%)");
-                    $command->info("Deals with both company and project: {$dealsWithBoth} of {$totalDeals} (" .
-                        round(($dealsWithBoth / $totalDeals) * 100, 2) . "%)");
-                }
+                // Calculate and log relationship stats
+                $relationshipStats = $this->calculateRelationshipStats($allDeals);
+                $this->logRelationshipStats($relationshipStats, count($allDeals), $command);
             }
 
             return [
@@ -164,16 +185,78 @@ class FetchDeals extends AbstractAction
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error('Failed to fetch deals: ' . $e->getMessage());
-                if ($e instanceof \Illuminate\Http\Client\RequestException) {
-                    $command->error('Response: ' . $e->response->body());
-                }
+                $command->error("Error in deals fetch process: " . $e->getMessage());
             }
+
+            Log::error("Error in deals fetch process: " . $e->getMessage());
+
             return [
                 'success' => false,
                 'deals' => [],
-                'error' => $e->getMessage()
+                'error' => 'Error in deals fetch process: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Calculate relationship statistics for deals
+     *
+     * @param array $deals
+     * @return array
+     */
+    protected function calculateRelationshipStats(array $deals): array
+    {
+        $stats = array_fill_keys($this->includeRelationships, 0);
+
+        foreach ($deals as $deal) {
+            if (isset($deal['relationships'])) {
+                foreach ($this->includeRelationships as $relationship) {
+                    if (
+                        isset($deal['relationships'][$relationship]['data']['id']) ||
+                        (isset($deal['relationships'][$relationship]['data']) && is_array($deal['relationships'][$relationship]['data']))
+                    ) {
+                        $stats[$relationship]++;
+                    }
+                }
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Log relationship statistics to the command output
+     *
+     * @param array $stats
+     * @param int $totalDeals
+     * @param Command $command
+     * @return void
+     */
+    protected function logRelationshipStats(array $stats, int $totalDeals, Command $command): void
+    {
+        if ($totalDeals > 0) {
+            foreach ($stats as $relationship => $count) {
+                $percentage = round(($count / $totalDeals) * 100, 2);
+                $command->info("Deals with {$relationship} relationship: {$count} ({$percentage}%)");
+            }
+        }
+    }
+
+    /**
+     * Log included data types for debugging
+     *
+     * @param array $included
+     * @param int $page
+     * @param Command $command
+     * @return void
+     */
+    protected function logIncludedData(array $included, int $page, Command $command): void
+    {
+        $includedTypes = [];
+        foreach ($included as $include) {
+            $type = $include['type'] ?? 'unknown';
+            $includedTypes[$type] = ($includedTypes[$type] ?? 0) + 1;
+        }
+        $command->info("Page {$page} included data: " . json_encode($includedTypes));
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_projects', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->string('id')->primary();
             $table->string('type')->default('projects'); // type of project, e.g., 'project', 'task', etc.
             // Core attributes
             $table->string('name');
@@ -34,11 +34,10 @@ return new class extends Migration
             $table->json('task_custom_fields_positions')->nullable();
             $table->boolean('sample_data')->default(false);
             // Relationships
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('company_id')->nullable();
-            $table->foreignId('project_manager_id')->nullable();
-            $table->foreignId('last_actor_id')->nullable();
-            $table->foreignId('workflow_id')->nullable();
+            $table->string('company_id')->nullable();
+            $table->string('project_manager_id')->nullable();
+            $table->string('last_actor_id')->nullable();
+            $table->string('workflow_id')->nullable();
             
             $table->timestamps(); // Laravel's created_at and updated_at
             $table->softDeletes();

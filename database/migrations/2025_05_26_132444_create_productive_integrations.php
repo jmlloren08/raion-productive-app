@@ -92,7 +92,7 @@ return new class extends Migration
             $table->foreignId('subsidiary_id')->nullable();
             $table->foreignId('project_id')->nullable();
             $table->foreignId('creator_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

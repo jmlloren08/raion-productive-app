@@ -33,7 +33,7 @@ return new class extends Migration
             // Relationships
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->unsignedBigInteger('creator_id')->nullable();
-            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             $table->unsignedBigInteger('invoice_id')->nullable();
             $table->unsignedBigInteger('payment_reminder_sequence_id')->nullable();
             $table->unsignedBigInteger('thread_id')->nullable();

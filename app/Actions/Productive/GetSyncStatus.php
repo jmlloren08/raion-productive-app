@@ -5,8 +5,8 @@ namespace App\Actions\Productive;
 use App\Models\ProductiveCompany;
 use App\Models\ProductiveProject;
 use App\Models\ProductiveDeal;
-use App\Models\ProductiveTimeEntries;
-use App\Models\ProductiveTimeEntryVersions;
+use App\Models\ProductiveTimeEntry;
+use App\Models\ProductiveTimeEntryVersion;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -32,9 +32,10 @@ class GetSyncStatus extends AbstractAction
                 'companies_count' => ProductiveCompany::count(),
                 'projects_count' => ProductiveProject::count(),
                 'deals_count' => ProductiveDeal::count(),
-                'time_entries_count' => ProductiveTimeEntries::count(),
-                'time_entry_versions_count' => ProductiveTimeEntryVersions::count(),
-            ];            // Get detailed relationship stats
+                'time_entries_count' => ProductiveTimeEntry::count(),
+                'time_entry_versions_count' => ProductiveTimeEntryVersion::count(),
+            ];
+            // Get detailed relationship stats
             $relationshipStats = $this->getRelationshipStatsAction->handle();
 
             return [

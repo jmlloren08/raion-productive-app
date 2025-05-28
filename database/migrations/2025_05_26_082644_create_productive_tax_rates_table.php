@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_tax_rates', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->string('id')->primary();
             $table->string('type')->default('tax_rates');
             // Core attributes
             $table->string('name');
@@ -23,7 +23,6 @@ return new class extends Migration
             $table->decimal('secondary_component_value', 10, 2)->nullable();
             $table->timestamp('archived_at')->nullable();
             // Relationships
-            $table->foreignId('organization_id')->nullable();
             $table->foreignId('subsidiary_id')->nullable();
 
             $table->timestamps();

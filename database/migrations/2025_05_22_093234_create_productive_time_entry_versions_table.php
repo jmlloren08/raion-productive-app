@@ -24,7 +24,6 @@ return new class extends Migration
 
             // Foreign keys (nullable to support partial data fetches)
             // $table->foreignId('time_entry_id')->nullable();
-            $table->foreignId('organization_id')->nullable();
             $table->foreignId('creator_id')->nullable();
 
             $table->timestamps();

@@ -11,7 +11,14 @@ class ProductiveDocumentType extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'productive_document_types';
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+    public $timestamps = false; // Disable Laravel timestamps
+
     protected $fillable = [
+        'id',
         'type',
         'name',
         'tax1_name',
@@ -34,7 +41,6 @@ class ProductiveDocumentType extends Model
         'email_subject',
         'email_data',
         'dual_currency',
-        'organization_id',
         'subsidiary_id',
         'document_style_id',
         'attachment_id'
@@ -51,14 +57,6 @@ class ProductiveDocumentType extends Model
     ];
 
     /**
-     * Get the organization that owns the document type.
-     */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(ProductiveOrganization::class, 'organization_id');
-    }
-
-    /**
      * Get the subsidiary that owns the document type.
      */
     public function subsidiary(): BelongsTo
@@ -67,10 +65,19 @@ class ProductiveDocumentType extends Model
     }
 
     /**
-     * Get the companies that use this document type as default.
+     * Get the document style associated with the document type.
      */
-    public function companies(): HasMany
+    public function documentStyle(): BelongsTo
     {
-        return $this->hasMany(ProductiveCompany::class, 'default_document_type_id');
+        return $this->belongsTo(ProductiveDocumentStyle::class, 'document_style_id');
     }
+
+    /**
+     * Get the attachment associated with the document type.
+     */
+    public function attachment(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveAttachment::class, 'attachment_id');
+    }
+
 }

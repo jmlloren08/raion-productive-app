@@ -24,7 +24,6 @@ return new class extends Migration
             $table->integer('pipeline_type_id');
 
             // Relationships
-            $table->foreignId('organization_id')->nullable();
             $table->foreignId('creator_id')->nullable();
             $table->foreignId('updater_id')->nullable();
             

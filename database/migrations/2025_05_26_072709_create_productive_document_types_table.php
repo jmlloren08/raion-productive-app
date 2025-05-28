@@ -22,8 +22,8 @@ return new class extends Migration
             $table->string('tax2_name')->nullable();
             $table->decimal('tax2_value', 5, 2)->nullable();
             $table->string('locale')->default('en_AU');
-            $table->foreignId('document_template_id')->nullable();
-            $table->foreignId('exportable_type_id')->nullable();
+            $table->integer('document_template_id')->nullable();
+            $table->integer('exportable_type_id')->nullable();
             $table->text('note')->nullable();
             $table->text('footer')->nullable();
             $table->json('template_options')->nullable();

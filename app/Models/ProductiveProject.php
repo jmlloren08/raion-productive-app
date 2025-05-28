@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ProductiveProject extends Model
 {
     use SoftDeletes;
+
+    protected $table = 'productive_projects';
     
     protected $keyType = 'string';
     public $incrementing = false;
@@ -36,8 +38,9 @@ class ProductiveProject extends Model
         'preferences',
         'tag_colors',
         'company_id',
-        'organization_id',
-        'productive_id'
+        'project_manager_id',
+        'last_actor_id',
+        'workflow_id',
     ];
     protected $casts = [
         'custom_fields' => 'array',
@@ -54,13 +57,36 @@ class ProductiveProject extends Model
         'sample_data' => 'boolean',
     ];
 
+    /**
+     * Get the company associated with the project.
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(ProductiveCompany::class, 'company_id');
     }
 
-    public function deals(): HasMany
+    /**
+     * Get the project manager associated with the project.
+     */
+    public function projectManager(): BelongsTo
     {
-        return $this->hasMany(ProductiveDeal::class, 'project_id');
+        return $this->belongsTo(ProductivePeople::class, 'project_manager_id');
     }
+
+    /**
+     * Get the last actor associated with the project.
+     */
+    public function lastActor(): BelongsTo
+    {
+        return $this->belongsTo(ProductivePeople::class, 'last_actor_id');
+    }
+
+    /**
+     * Get the workflow associated with the project.
+     */
+    public function workflow(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveWorkflow::class, 'workflow_id');
+    }
+
 }

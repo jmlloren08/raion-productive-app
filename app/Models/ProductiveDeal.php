@@ -10,6 +10,8 @@ class ProductiveDeal extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'productive_deals';
+
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
@@ -107,10 +109,19 @@ class ProductiveDeal extends Model
         'expense',
         'expense_default',
         'expense_normalized',
+        'creator_id',
         'company_id',
+        'document_type_id',
+        'responsible_id',
+        'deal_status_id',
         'project_id',
-        'organization_id',
-        'productive_id'
+        'lost_reason_id',
+        'contract_id',
+        'contact_id',
+        'template_id',
+        'tax_rate_id',
+        'origin_deal_id',
+        'apa_id',
     ];
 
     protected $casts = [
@@ -137,13 +148,115 @@ class ProductiveDeal extends Model
         'external_sync' => 'boolean',
     ];
 
+    /**
+     * Get the creator associated with the deal.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(ProductivePeople::class, 'creator_id');
+    }
+
+    /**
+     * Get the company associated with the deal.
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(ProductiveCompany::class, 'company_id');
     }
 
+    /**
+     * Get the dcoument type associated with the deal.
+     */
+    public function documentType(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveDocumentType::class, 'document_type_id');
+    }
+
+    /**
+     * Get the responsible associated with the deal.
+     */
+    public function responsible(): BelongsTo
+    {
+        return $this->belongsTo(ProductivePeople::class, 'responsible_id');
+    }
+
+    /**
+     * Get the deal status associated with the deal.
+     */
+    public function dealStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveDealStatus::class, 'deal_status_id');
+    }
+
+    /**
+     * Get the project associated with the deal.
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(ProductiveProject::class, 'project_id');
+    }
+
+    /**
+     * Get the lost reason associated with the deal.
+     */
+    public function lostReason(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveLostReason::class, 'lost_reason_id');
+    }
+
+    /**
+     * Get the contract associated with the deal.
+     */
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveContract::class, 'contract_id');
+    }
+
+    /**
+     * Get the contact associated with the deal.
+     */
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveContact::class, 'contact_id');
+    }
+
+    /**
+     * Get the subsidiary associated with the deal.
+     */
+    public function subsidiary(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveSubsidiary::class, 'subsidiary_id');
+    }
+
+    /**
+     * Get the template associated with the deal.
+     */
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveTemplate::class, 'template_id');
+    }
+
+    /**
+     * Get the tax rate associated with the deal.
+     */
+    public function taxRate(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveTaxRate::class, 'tax_rate_id');
+    }
+
+    /**
+     * Get the origin deal associated with the deal.
+     */
+    public function originDeal(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveDeal::class, 'origin_deal_id');
+    }
+
+    /**
+     * Get the apa associated with the deal.
+     */
+    public function apa(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveApa::class, 'apa_id');
     }
 }

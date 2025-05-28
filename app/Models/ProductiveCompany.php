@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveCompany extends Model
@@ -14,6 +13,11 @@ class ProductiveCompany extends Model
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
         'id',
         'type',
@@ -25,6 +29,8 @@ class ProductiveCompany extends Model
         'last_activity_at',
         'archived_at',
         'avatar_url',
+        'invoice_email_recipients',
+        'custom_fields',
         'company_code',
         'domain',
         'projectless_budgets',
@@ -38,34 +44,50 @@ class ProductiveCompany extends Model
         'due_days',
         'tag_list',
         'contact',
-        'invoice_email_recipients',
+        'sample_data',
         'settings',
-        'custom_fields',
         'external_id',
         'external_sync',
-        'productive_id',
+        'custom_field_people',
+        'custom_field_attachments',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
     protected $casts = [
-        'tag_list' => 'array',
+        'projectless_budgets' => 'boolean',
+        'sample_data' => 'boolean',
+        'external_sync' => 'boolean',
+        'created_at_api' => 'datetime',
+        'last_activity_at' => 'datetime',
+        'archived_at' => 'datetime',
         'invoice_email_recipients' => 'array',
         'custom_fields' => 'array',
+        'tag_list' => 'array',
         'contact' => 'array',
         'settings' => 'array',
-        'created_at_api' => 'timestamp',
-        'last_activity_at' => 'timestamp',
-        'archived_at' => 'timestamp',
-        'projectless_budgets' => 'boolean',
-        'external_sync' => 'boolean',
+        'custom_field_people' => 'array',
+        'custom_field_attachments' => 'array',
+        'due_days' => 'integer',
     ];
 
-    public function projects(): HasMany
+    /**
+     * Get the subsidiary associated with the company.
+     */
+    public function subsidiary()
     {
-        return $this->hasMany(ProductiveProject::class, 'company_id');
+        return $this->belongsTo(ProductiveSubsidiary::class, 'default_subsidiary_id');
+    }
+    /**
+     * Get the tax rate associated with the company.
+     */
+
+    public function taxRate()
+    {
+        return $this->belongsTo(ProductiveTaxRate::class, 'default_tax_rate_id');
     }
 
-    public function deals(): HasMany
-    {
-        return $this->hasMany(ProductiveDeal::class, 'company_id');
-    }
 }

@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('productive_attachments', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('attachments'); // type of attachment, e.g., 'file', 'image', etc.
             // Core attributes
-            // Attributes
             $table->string('name');
             $table->string('content_type');
             $table->integer('size');
@@ -43,7 +42,7 @@ return new class extends Migration
             $table->foreignId('task_id')->nullable();
             $table->foreignId('document_style_id')->nullable();
             $table->foreignId('document_type_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             // Relationships
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('productive_apa', function (Blueprint $table) {
+        Schema::create('productive_apas', function (Blueprint $table) {
             // Primary key
             $table->id();
             $table->string('type')->default('approval_policy_assignments');
             // Core attributes
             $table->string('target_type')->default('person');
             // Relationships
-            $table->foreignId('organization_id')->nullable();
             $table->foreignId('person_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             $table->foreignId('approval_policy_id')->nullable();
             
             $table->timestamps();
@@ -33,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('productive_apa');
+        Schema::dropIfExists('productive_apas');
     }
 };

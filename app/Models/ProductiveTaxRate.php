@@ -11,7 +11,14 @@ class ProductiveTaxRate extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'productive_tax_rates';
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+    public $timestamps = false; // Disable Laravel timestamps
+
     protected $fillable = [
+        'id',
         'type',
         'name',
         'primary_component_name',
@@ -19,7 +26,6 @@ class ProductiveTaxRate extends Model
         'secondary_component_name',
         'secondary_component_value',
         'archived_at',
-        'organization_id',
         'subsidiary_id'
     ];
 
@@ -30,26 +36,10 @@ class ProductiveTaxRate extends Model
     ];
 
     /**
-     * Get the organization that owns the tax rate.
-     */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(ProductiveOrganization::class, 'organization_id');
-    }
-
-    /**
      * Get the subsidiary that owns the tax rate.
      */
     public function subsidiary(): BelongsTo
     {
         return $this->belongsTo(ProductiveSubsidiary::class, 'subsidiary_id');
-    }
-
-    /**
-     * Get the companies that use this tax rate as default.
-     */
-    public function companies(): HasMany
-    {
-        return $this->hasMany(ProductiveCompany::class, 'default_tax_rate_id');
     }
 }

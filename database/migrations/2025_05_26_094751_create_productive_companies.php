@@ -13,33 +13,28 @@ return new class extends Migration
     {
         Schema::create('productive_companies', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->string('id')->primary();
             $table->string('type')->default('companies'); // type of company, e.g., 'company', 'customer', etc.
             // Core attributes
             $table->string('name');
             $table->string('billing_name')->nullable();
             $table->string('vat')->nullable();
-            $table->string('default_currency', 10)->nullable();
-            // Timestamps from API
-            $table->timestamp('created_at_api')->nullable(); // renamed to prevent conflict with Laravel's own timestamps
+            $table->string('default_currency')->nullable();
+            $table->timestamp('created_at_api')->useCurrent();
             $table->timestamp('last_activity_at')->nullable();
             $table->timestamp('archived_at')->nullable();
             $table->string('avatar_url')->nullable();
-            // JSON fields for nested/dynamic content
             $table->json('invoice_email_recipients')->nullable();
             $table->json('custom_fields')->nullable();
-            // Identifiers and codes
             $table->string('company_code')->nullable();
             $table->string('domain')->nullable();
             $table->boolean('projectless_budgets')->default(false);
             $table->string('leitweg_id')->nullable();
             $table->string('buyer_reference')->nullable();
             $table->string('peppol_id')->nullable();
-            // Relationships
-            $table->foreignId('default_subsidiary_id')->nullable();
-            $table->foreignId('default_tax_rate_id')->nullable();
-            $table->foreignId('default_document_type_id')->nullable();
-            // Other attributes
+            $table->string('default_subsidiary_id')->nullable();
+            $table->string('default_tax_rate_id')->nullable();
+            $table->string('default_document_type_id')->nullable();
             $table->text('description')->nullable();
             $table->integer('due_days')->nullable();
             $table->json('tag_list')->nullable();
@@ -48,8 +43,6 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->string('external_id')->nullable();
             $table->boolean('external_sync')->default(false);
-            // Foreign-key style references
-            $table->foreignId('organization_id')->nullable();
             
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

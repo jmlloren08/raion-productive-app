@@ -31,7 +31,7 @@ return new class extends Migration
             $table->foreignId('organization_id')->nullable();
             $table->foreignId('company_id')->nullable();
             $table->foreignId('creator_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
             $table->foreignId('discussion_id')->nullable();
             $table->foreignId('invoice_id')->nullable();
             $table->foreignId('person_id')->nullable();

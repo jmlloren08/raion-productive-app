@@ -22,7 +22,7 @@ return new class extends Migration
             $table->json('editor_config')->nullable();
             // Relationships
             $table->foreignId('organization_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
+            $table->string('deal_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

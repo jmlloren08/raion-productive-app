@@ -11,7 +11,14 @@ class ProductiveSubsidiary extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'productive_subsidiaries';
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+    public $timestamps = false; // Disable Laravel timestamps
+
     protected $fillable = [
+        'id',
         'type',
         'name',
         'invoice_number_format',
@@ -23,7 +30,21 @@ class ProductiveSubsidiary extends Model
         'peppol_id',
         'export_integration_type_id',
         'invoice_logo_url',
-        'organization_id',
+        'bill_from_id',
+        'custom_domain_id',
+        'default_tax_rate_id',
+        'integration_id'
+    ];
+
+    protected $nullable = [
+        'invoice_number_format',
+        'invoice_number_scope',
+        'archived_at',
+        'einvoice_payment_means_type_id',
+        'einvoice_download_format_id',
+        'peppol_id',
+        'export_integration_type_id',
+        'invoice_logo_url',
         'bill_from_id',
         'custom_domain_id',
         'default_tax_rate_id',
@@ -36,15 +57,23 @@ class ProductiveSubsidiary extends Model
     ];
 
     /**
-     * Get the organization that owns the subsidiary.
+     * Get the bill_from_id (contact_entries) associated with the subsidiary.
      */
-    public function organization(): BelongsTo
+    public function billFrom(): BelongsTo
     {
-        return $this->belongsTo(ProductiveOrganization::class, 'organization_id');
+        return $this->belongsTo(ProductiveContactEntry::class, 'bill_from_id');
     }
 
     /**
-     * Get the default tax rate for this subsidiary.
+     * Get the custom_domain associated with the subsidiary.
+     */
+    public function customDomain(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveCustomDomain::class, 'custom_domain_id');
+    }
+
+    /**
+     * Get the default_tax_rate associated with the subsidiary.
      */
     public function defaultTaxRate(): BelongsTo
     {
@@ -52,10 +81,11 @@ class ProductiveSubsidiary extends Model
     }
 
     /**
-     * Get the companies that use this subsidiary.
+     * Get the integration associated with the subsidiary.
      */
-    public function companies(): HasMany
+    public function integration(): BelongsTo
     {
-        return $this->hasMany(ProductiveCompany::class, 'default_subsidiary_id');
+        return $this->belongsTo(ProductiveIntegration::class, 'integration_id');
     }
+
 }

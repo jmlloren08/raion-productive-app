@@ -4,99 +4,250 @@ namespace App\Actions\Productive;
 
 use App\Models\ProductiveCompany;
 use App\Models\ProductiveProject;
+use App\Models\ProductivePeople;
+use App\Models\ProductiveWorkflow;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class StoreProject extends AbstractAction
 {
     /**
-     * Execute the action to store a project.
+     * Required fields that must be present in the project data
+     */
+    protected array $requiredFields = [
+        'name',
+    ];
+
+    /**
+     * Foreign key relationships to validate
+     */
+    protected array $foreignKeys = [
+        'company_id' => ProductiveCompany::class,
+        'project_manager_id' => ProductivePeople::class,
+        'last_actor_id' => ProductivePeople::class,
+        'workflow_id' => ProductiveWorkflow::class
+    ];
+
+    /**
+     * Store a project in the database
      *
      * @param array $parameters
-     * @return void
+     * @return bool
+     * @throws \Exception
      */
-    public function handle(array $parameters = []): void
+    public function handle(array $parameters = []): bool
     {
-        $projectData = $parameters['projectData'];
+        $projectData = $parameters['projectData'] ?? null;
         $command = $parameters['command'] ?? null;
-        
-        $companyId = null;
-        if (isset($projectData['relationships']['company']['data']['id'])) {
-            $companyId = $projectData['relationships']['company']['data']['id'];
-            // Check if company exists in our database
-            $companyExists = ProductiveCompany::where('id', $companyId)->exists();
-            if (!$companyExists) {
-                if ($command) {
-                    $command->warn("Project '{$projectData['attributes']['name']}' is linked to company ID: {$companyId}, but this company doesn't exist in our database.");
-                }
-                $companyId = null; // Reset to avoid foreign key constraint failure
-            } else if ($command) {
-                $command->info("Project '{$projectData['attributes']['name']}' is linked to company ID: {$companyId}");
-            }
-        } else if ($command) {
-            $command->warn("Project '{$projectData['attributes']['name']}' has no company relationship");
+
+        if (!$projectData) {
+            throw new \Exception('Project data is required');
         }
 
-        $attributes = $projectData['attributes'] ?? [];
-
-        // Prepare data with safe fallbacks for all fields
-        $data = [
-            'id' => $projectData['id'],
-            'company_id' => $companyId,
-            'type' => $projectData['type'] ?? 'projects',
-            'name' => $attributes['name'] ?? 'Unknown Project',
-            'number' => $attributes['number'] ?? null,
-            'project_number' => $attributes['project_number'] ?? $attributes['number'] ?? null,
-            'project_type_id' => $attributes['project_type_id'] ?? null,
-            'project_color_id' => $attributes['project_color_id'] ?? null,
-            'last_activity_at' => $attributes['last_activity_at'] ?? null,
-            'archived_at' => $attributes['archived_at'] ?? null,
-            'created_at_api' => $attributes['created_at'] ?? null,
-            
-            // Boolean fields
-            'public_access' => $attributes['public_access'] ?? false,
-            'time_on_tasks' => $attributes['time_on_tasks'] ?? false,
-            'template' => $attributes['template'] ?? false,
-            'sample_data' => $attributes['sample_data'] ?? false,
-            
-            // JSON fields
-            'preferences' => is_array($attributes['preferences']) 
-                ? json_encode($attributes['preferences']) 
-                : $attributes['preferences'] ?? null,
-            'tag_colors' => is_array($attributes['tag_colors']) 
-                ? json_encode($attributes['tag_colors']) 
-                : $attributes['tag_colors'] ?? null,
-            'custom_fields' => is_array($attributes['custom_fields']) 
-                ? json_encode($attributes['custom_fields']) 
-                : $attributes['custom_fields'] ?? null,
-            'task_custom_fields_ids' => is_array($attributes['task_custom_fields_ids']) 
-                ? json_encode($attributes['task_custom_fields_ids']) 
-                : $attributes['task_custom_fields_ids'] ?? null,
-            'task_custom_fields_positions' => is_array($attributes['task_custom_fields_positions']) 
-                ? json_encode($attributes['task_custom_fields_positions']) 
-                : $attributes['task_custom_fields_positions'] ?? null,
-        ];
-
         try {
+            if ($command instanceof Command) {
+                $command->info("Processing project: {$projectData['id']}");
+            }
+
+            // Validate basic data structure
+            if (!isset($projectData['id'])) {
+                throw new \Exception("Missing required field 'id' in root data object");
+            }
+
+            $attributes = $projectData['attributes'] ?? [];
+            $relationships = $projectData['relationships'] ?? [];
+
+            // Debug log relationships
+            // if ($command instanceof Command) {
+            //     $command->info("Project relationships: " . json_encode($relationships));
+            // }
+
+            // Add type from root level if not in attributes
+            if (!isset($attributes['type']) && isset($projectData['type'])) {
+                $attributes['type'] = $projectData['type'];
+            }
+
+            // Validate required fields
+            $this->validateRequiredFields($attributes, $projectData['id'], $command);
+
+            // Prepare base data
+            $data = [
+                'id' => $projectData['id'],
+                'type' => $attributes['type'] ?? $projectData['type'] ?? 'projects',
+            ];
+
+            // Add all attributes with safe fallbacks
+            foreach ($attributes as $key => $value) {
+                $data[$key] = $value;
+            }
+
+            // Handle JSON fields
+            $this->handleJsonFields($data);
+
+            // Handle foreign key relationships
+            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Project', $command);
+
+            // Debug log final data
+            // if ($command instanceof Command) {
+            //     $command->info("Final project data: " . json_encode($data));
+            // }
+
+            // Validate data types
+            $this->validateDataTypes($data);
+
+            // Create or update project
             ProductiveProject::updateOrCreate(
                 ['id' => $projectData['id']],
                 $data
             );
-            
-            if ($command) {
-                $command->info("Stored project '{$attributes['name']}' (ID: {$projectData['id']})");
+
+            if ($command instanceof Command) {
+                $command->info("Successfully stored project: {$attributes['name']} (ID: {$projectData['id']})");
             }
+
+            return true;
+
         } catch (\Exception $e) {
-            if ($command) {
-                $command->error("Failed to store project '{$attributes['name']}' (ID: {$projectData['id']}): " . $e->getMessage());
-                // Log additional details for troubleshooting
-                $command->warn("Project data: " . json_encode([
-                    'id' => $projectData['id'],
-                    'company_id' => $companyId,
-                    'name' => $attributes['name'] ?? 'Unknown Project'
-                ]));
-            } else {
-                throw $e;
+            if ($command instanceof Command) {
+                $command->error("Failed to store project {$projectData['id']}: " . $e->getMessage());
             }
+            Log::error("Failed to store project {$projectData['id']}: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Validate that all required fields are present
+     *
+     * @param array $attributes
+     * @param string $projectId
+     * @param Command|null $command
+     * @throws \Exception
+     */
+    protected function validateRequiredFields(array $attributes, string $projectId, ?Command $command): void
+    {
+        $missingFields = [];
+        foreach ($this->requiredFields as $field) {
+            if (!isset($attributes[$field])) {
+                $missingFields[] = $field;
+            }
+        }
+
+        if (!empty($missingFields)) {
+            $message = "Required fields missing for project {$projectId}: " . implode(', ', $missingFields);
+            if ($command) {
+                $command->error($message);
+            }
+            throw new \Exception($message);
+        }
+    }
+
+    /**
+     * Handle JSON fields in the data
+     *
+     * @param array &$data
+     */
+    protected function handleJsonFields(array &$data): void
+    {
+        $jsonFields = [
+            'preferences',
+            'tag_colors',
+            'custom_fields',
+            'task_custom_fields_ids',
+            'task_custom_fields_positions',
+        ];
+
+        foreach ($jsonFields as $field) {
+            if (isset($data[$field])) {
+                if (is_array($data[$field])) {
+                    $data[$field] = json_encode($data[$field]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle foreign key relationships
+     *
+     * @param array $relationships
+     * @param array &$data
+     * @param string $projectName
+     * @param Command|null $command
+     */
+    protected function handleForeignKeys(array $relationships, array &$data, string $projectName, ?Command $command): void
+    {
+        // Map relationship keys to their corresponding data keys
+        $relationshipMap = [
+            'company' => 'company_id',
+            'project_manager' => 'project_manager_id',
+            'last_actor' => 'last_actor_id',
+            'workflow' => 'workflow_id'
+        ];
+
+        foreach ($relationshipMap as $apiKey => $dbKey) {
+            if (isset($relationships[$apiKey]['data']['id'])) {
+                $id = $relationships[$apiKey]['data']['id'];
+                if ($command) {
+                    $command->info("Processing relationship {$apiKey} with ID: {$id}");
+                }
+
+                // Get the model class for this relationship
+                $modelClass = $this->foreignKeys[$dbKey];
+
+                if (!$modelClass::where('id', $id)->exists()) {
+                    if ($command) {
+                        $command->warn("Project '{$projectName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
+                    }
+                    $data[$dbKey] = null;
+                } else {
+                    $data[$dbKey] = $id;
+                    if ($command) {
+                        $command->info("Successfully linked {$apiKey} with ID: {$id}");
+                    }
+                }
+            } else {
+                if ($command) {
+                    $command->info("No relationship data found for {$apiKey}");
+                }
+            }
+        }
+    }
+
+    /**
+     * Validate data types for all fields
+     *
+     * @param array $data
+     * @throws ValidationException
+     */
+    protected function validateDataTypes(array $data): void
+    {
+        $rules = [
+            'name' => 'required|string',
+            'number' => 'required|string',
+            'project_number' => 'required|string',
+            'project_type_id' => 'required|integer',
+            'project_color_id' => 'required|integer',
+            'public_access' => 'boolean',
+            'time_on_tasks' => 'boolean',
+            'template' => 'boolean',
+            'sample_data' => 'boolean',
+            'preferences' => 'nullable|json',
+            'tag_colors' => 'nullable|json',
+            'custom_fields' => 'nullable|json',
+            'task_custom_fields_ids' => 'nullable|json',
+            'task_custom_fields_positions' => 'nullable|json',
+            'company_id' => 'nullable|string',
+            'project_manager_id' => 'nullable|string',
+            'last_actor_id' => 'nullable|string',
+            'workflow_id' => 'nullable|string'
+        ];
+
+        $validator = Validator::make($data, $rules);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
         }
     }
 }

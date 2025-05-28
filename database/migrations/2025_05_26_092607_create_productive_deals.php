@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_deals', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->string('id')->primary();
             $table->string('type')->default('deals'); // type of deal, e.g., 'deal', 'opportunity', etc.
             // Core attributes
             $table->string('name');
@@ -107,8 +107,8 @@ return new class extends Migration
             $table->decimal('expense_default', 15, 2);
             $table->decimal('expense_normalized', 15, 2);
             // Relationships
-            $table->foreignId('organization_id')->nullable();
             $table->foreignId('creator_id')->nullable();
+            $table->string('company_id')->nullable();
             $table->foreignId('document_type_id')->nullable();
             $table->json('proposal_document_type')->nullable();
             $table->foreignId('responsible_id')->nullable();

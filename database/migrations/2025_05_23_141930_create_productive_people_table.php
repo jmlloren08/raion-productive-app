@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -13,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('productive_people', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->string('id')->primary();
             $table->string('type')->default('people'); // type of person, e.g., 'user', 'client',
             // Core attributes
             $table->string('avatar_url')->nullable();
@@ -49,23 +50,22 @@ return new class extends Migration
             $table->timestamp('time_unlocked_start_date')->nullable();
             $table->timestamp('time_unlocked_end_date')->nullable();
             $table->integer('time_unlocked_period_id')->nullable();
-            $table->string('time_unlocked_interval')->nullable();
+            $table->integer('time_unlocked_interval')->nullable();
             $table->timestamp('last_activity_at')->nullable();
-            $table->string('two_factor_auth')->nullable();
+            $table->boolean('two_factor_auth')->default(false)->nullable();
             $table->json('availabilities')->nullable();
             $table->string('external_id')->nullable();
             $table->boolean('external_sync')->default(false);
-            $table->integer('hrm_type_id')->default(2);
+            $table->integer('hrm_type_id')->nullable();
             $table->boolean('champion')->default(false);
             $table->boolean('timesheet_submission_disabled')->default(false);
             // Relationships - using foreign IDs without constraints to avoid circular dependencies
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('manager_id')->nullable();
-            $table->foreignId('company_id')->nullable();
-            $table->foreignId('subsidiary_id')->nullable();
+            $table->string('manager_id')->nullable();
+            $table->string('company_id')->nullable();
+            $table->string('subsidiary_id')->nullable();
             $table->json('custom_role')->nullable();
-            $table->foreignId('apa_id')->nullable();
-            $table->foreignId('team_id')->nullable();
+            $table->string('apa_id')->nullable();
+            $table->string('team_id')->nullable();
 
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();
