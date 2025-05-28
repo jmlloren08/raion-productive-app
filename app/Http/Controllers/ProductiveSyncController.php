@@ -6,7 +6,6 @@ use App\Actions\Productive\GetSyncStatus;
 use App\Actions\Productive\TriggerSync;
 use App\Actions\Productive\GetRelationshipStats;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ProductiveSyncController extends Controller

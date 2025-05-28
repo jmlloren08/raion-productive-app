@@ -10,6 +10,10 @@ use App\Models\ProductiveTimeEntryVersion;
 use App\Models\ProductiveDocumentType;
 use App\Models\ProductiveDocumentStyle;
 use App\Models\ProductivePeople;
+use App\Models\ProductiveTaxRate;
+use App\Models\ProductiveSubsidiary;
+use App\Models\ProductiveWorkflow;
+use App\Models\ProductiveContactEntry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -27,82 +31,71 @@ class GetRelationshipStats extends AbstractAction
             $stats = [
                 'companies' => [
                     'total' => ProductiveCompany::count(),
-                    'with_projects' => ProductiveCompany::has('projects')->count(),
-                    'with_deals' => ProductiveCompany::has('deals')->count(),
                     'with_default_subsidiary' => ProductiveCompany::whereNotNull('default_subsidiary_id')->count(),
                     'with_default_tax_rate' => ProductiveCompany::whereNotNull('default_tax_rate_id')->count(),
-                    'with_default_document_type' => ProductiveCompany::whereNotNull('default_document_type_id')->count(),
-                    'archived' => ProductiveCompany::whereNotNull('archived_at')->count()
                 ],
                 'document_styles' => [
                     'total' => ProductiveDocumentStyle::count(),
                     'with_attachment' => ProductiveDocumentStyle::whereNotNull('attachment_id')->count(),
-                    'used_by_document_types' => ProductiveDocumentStyle::has('documentTypes')->count(),
-                    'orphaned' => ProductiveDocumentStyle::doesntHave('documentTypes')->count()
                 ],
                 'document_types' => [
                     'total' => ProductiveDocumentType::count(),
                     'with_subsidiary' => ProductiveDocumentType::whereNotNull('subsidiary_id')->count(),
                     'with_document_style' => ProductiveDocumentType::whereNotNull('document_style_id')->count(),
                     'with_attachment' => ProductiveDocumentType::whereNotNull('attachment_id')->count(),
-                    'orphaned' => ProductiveDocumentType::whereNull('subsidiary_id')->count(),
-                    'archived' => ProductiveDocumentType::whereNotNull('archived_at')->count()
                 ],
                 'projects' => [
                     'total' => ProductiveProject::count(),
                     'with_company' => ProductiveProject::whereNotNull('company_id')->count(),
-                    'with_deals' => ProductiveProject::has('deals')->count(),
-                    'with_time_entries' => ProductiveProject::whereHas('deals', function($q) {
-                        $q->whereHas('timeEntries');
-                    })->count(),
-                    'archived' => ProductiveProject::whereNotNull('archived_at')->count(),
-                    'orphaned' => ProductiveProject::whereNull('company_id')->count()
+                    'with_project_manager' => ProductiveProject::whereNotNull('project_manager_id')->count(),
+                    'with_last_actor' => ProductiveProject::whereNotNull('last_actor_id')->count(),
+                    'with_workflow' => ProductiveProject::whereNotNull('workflow_id')->count(),
                 ],
                 'deals' => [
                     'total' => ProductiveDeal::count(),
-                    'with_company' => ProductiveDeal::whereNotNull('company_id')->count(),
-                    'with_project' => ProductiveDeal::whereNotNull('project_id')->count(),
-                    'with_document_type' => ProductiveDeal::whereNotNull('document_type_id')->count(),
-                    'with_pipeline' => ProductiveDeal::whereNotNull('pipeline_id')->count(),
-                    'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
-                    'with_subsidiary' => ProductiveDeal::whereNotNull('subsidiary_id')->count(),
                     'with_creator' => ProductiveDeal::whereNotNull('creator_id')->count(),
+                    'with_company' => ProductiveDeal::whereNotNull('company_id')->count(),
+                    'with_document_type' => ProductiveDeal::whereNotNull('document_type_id')->count(),
                     'with_responsible_person' => ProductiveDeal::whereNotNull('responsible_id')->count(),
-                    'with_time_entries' => ProductiveDeal::has('timeEntries')->count(),
-                    'orphaned' => ProductiveDeal::whereNull('company_id')->whereNull('project_id')->count()
-                ],
-                'time_entries' => [
-                    'total' => ProductiveTimeEntry::count(),
-                    'with_person' => ProductiveTimeEntry::whereNotNull('person_id')->count(),
-                    'with_service' => ProductiveTimeEntry::whereNotNull('service_id')->count(),
-                    'with_task' => ProductiveTimeEntry::whereNotNull('task_id')->count(),
-                    'with_deal' => ProductiveTimeEntry::whereNotNull('deal_id')->count(),
-                    'with_project' => ProductiveTimeEntry::whereNotNull('project_id')->count(),
-                    'with_approver' => ProductiveTimeEntry::whereNotNull('approver_id')->count(),
-                    'billable' => ProductiveTimeEntry::where('billable_time', '>', 0)->count(),
-                    'approved' => ProductiveTimeEntry::whereNotNull('approved_at')->count(),
-                    'rejected' => ProductiveTimeEntry::whereNotNull('rejected_at')->count(),
-                    'submitted' => ProductiveTimeEntry::where('submitted', true)->count(),
-                    'orphaned' => ProductiveTimeEntry::whereNull('person_id')->orWhereNull('deal_id')->count()
-                ],
-                'time_entry_versions' => [
-                    'total' => ProductiveTimeEntryVersion::count(),
-                    'with_time_entry' => ProductiveTimeEntryVersion::whereNotNull('item_id')->count(),
-                    'by_event' => ProductiveTimeEntryVersion::select('event', DB::raw('count(*) as count'))
-                        ->groupBy('event')
-                        ->pluck('count', 'event')
-                        ->toArray()
+                    'with_deal_status' => ProductiveDeal::whereNotNull('deal_status_id')->count(),
+                    'with_project' => ProductiveDeal::whereNotNull('project_id')->count(),
+                    'with_lost_reason' => ProductiveDeal::whereNotNull('lost_reason_id')->count(),
+                    'with_contract' => ProductiveDeal::whereNotNull('contract_id')->count(),
+                    'with_contact' => ProductiveDeal::whereNotNull('contact_id')->count(),
+                    'with_subsidiary' => ProductiveDeal::whereNotNull('subsidiary_id')->count(),
+                    'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
+                    'with_apa' => ProductiveDeal::whereNotNull('apa_id')->count(),
                 ],
                 'people' => [
                     'total' => ProductivePeople::count(),
+                    'with_manager' => ProductivePeople::whereNotNull('manager_id')->count(),
                     'with_company' => ProductivePeople::whereNotNull('company_id')->count(),
                     'with_subsidiary' => ProductivePeople::whereNotNull('subsidiary_id')->count(),
-                    'with_manager' => ProductivePeople::whereNotNull('manager_id')->count(),
-                    'with_time_entries' => ProductivePeople::has('timeEntries')->count(),
-                    'is_user' => ProductivePeople::where('is_user', true)->count(),
-                    'is_virtual' => ProductivePeople::where('virtual', true)->count(),
-                    'is_champion' => ProductivePeople::where('champion', true)->count(),
-                    'archived' => ProductivePeople::whereNotNull('archived_at')->count()
+                    'with_tax_rate' => ProductivePeople::whereNotNull('tax_rate_id')->count(),
+                    'with_apa' => ProductivePeople::whereNotNull('apa_id')->count(),
+                ],
+                'tax_rates' => [
+                    'total' => ProductiveTaxRate::count(),
+                    'with_subsidiary' => ProductiveTaxRate::whereNotNull('subsidiary_id')->count(),
+                ],
+                'subsidiaries' => [
+                    'total' => ProductiveSubsidiary::count(),
+                    'with_contact_entry' => ProductiveSubsidiary::whereNotNull('contact_entry_id')->count(),
+                    'with_custom_domain' => ProductiveSubsidiary::whereNotNull('custom_domain_id')->count(),
+                    'with_tax_rate' => ProductiveSubsidiary::whereNotNull('default_tax_rate_id')->count(),
+                    'with_integration' => ProductiveSubsidiary::whereNotNull('integration_id')->count(),
+                ],
+                'workflows' => [
+                    'total' => ProductiveWorkflow::count(),
+                    'with_workflow_status' => ProductiveWorkflow::whereNotNull('workflow_status_id')->count(),
+                ],
+                'contact_entries' => [
+                    'total' => ProductiveContactEntry::count(),
+                    'with_company' => ProductiveContactEntry::whereNotNull('company_id')->count(),
+                    'with_person' => ProductiveContactEntry::whereNotNull('person_id')->count(),
+                    'with_invoice' => ProductiveContactEntry::whereNotNull('invoice_id')->count(),
+                    'with_subsidiary' => ProductiveContactEntry::whereNotNull('subsidiary_id')->count(),
+                    'with_purchase_order' => ProductiveContactEntry::whereNotNull('purchase_order_id')->count(),
                 ]
             ];
 
@@ -133,7 +126,11 @@ class GetRelationshipStats extends AbstractAction
                 'time_entry_versions' => ['total' => ProductiveTimeEntryVersion::count()],
                 'document_types' => ['total' => ProductiveDocumentType::count()],
                 'document_styles' => ['total' => ProductiveDocumentStyle::count()],
-                'people' => ['total' => ProductivePeople::count()]
+                'people' => ['total' => ProductivePeople::count()],
+                'tax_rates' => ['total' => ProductiveTaxRate::count()],
+                'subsidiaries' => ['total' => ProductiveSubsidiary::count()],
+                'workflows' => ['total' => ProductiveWorkflow::count()],
+                'contact_entries' => ['total' => ProductiveContactEntry::count()]
             ];
         }
     }

@@ -34,7 +34,7 @@ class TriggerSync extends AbstractAction
 
             // Store time before sync to measure duration
             $startTime = microtime(true);            // Run the sync command - using refactored version
-            $output = Artisan::call('sync:productive-refactored');
+            $output = Artisan::call('sync:productive');
 
             if ($output !== 0) {
                 throw new \RuntimeException('Sync command failed with exit code: ' . $output);

@@ -7,6 +7,13 @@ use App\Models\ProductiveProject;
 use App\Models\ProductiveDeal;
 use App\Models\ProductiveTimeEntry;
 use App\Models\ProductiveTimeEntryVersion;
+use App\Models\ProductiveDocumentType;
+use App\Models\ProductiveDocumentStyle;
+use App\Models\ProductivePeople;
+use App\Models\ProductiveTaxRate;
+use App\Models\ProductiveSubsidiary;
+use App\Models\ProductiveWorkflow;
+use App\Models\ProductiveContactEntry;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -34,6 +41,13 @@ class GetSyncStatus extends AbstractAction
                 'deals_count' => ProductiveDeal::count(),
                 'time_entries_count' => ProductiveTimeEntry::count(),
                 'time_entry_versions_count' => ProductiveTimeEntryVersion::count(),
+                'document_types_count' => ProductiveDocumentType::count(),
+                'document_styles_count' => ProductiveDocumentStyle::count(),
+                'people_count' => ProductivePeople::count(),
+                'tax_rates_count' => ProductiveTaxRate::count(),
+                'subsidiaries_count' => ProductiveSubsidiary::count(),
+                'workflows_count' => ProductiveWorkflow::count(),
+                'contact_entries_count' => ProductiveContactEntry::count(),
             ];
             // Get detailed relationship stats
             $relationshipStats = $this->getRelationshipStatsAction->handle();

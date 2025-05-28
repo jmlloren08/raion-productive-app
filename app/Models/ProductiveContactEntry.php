@@ -37,6 +37,7 @@ class ProductiveContactEntry extends Model
         'country',
         'vat',
         'billing_address',
+        
         'company_id',
         'person_id',
         'invoice_id',
