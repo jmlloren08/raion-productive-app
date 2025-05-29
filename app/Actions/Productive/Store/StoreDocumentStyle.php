@@ -1,20 +1,19 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
-use App\Models\ProductiveCompany;
-use App\Models\ProductiveProject;
-use App\Models\ProductivePeople;
-use App\Models\ProductiveWorkflow;
+use App\Actions\Productive\AbstractAction;
+use App\Models\ProductiveDocumentStyle;
+use App\Models\ProductiveAttachment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class StoreProject extends AbstractAction
+class StoreDocumentStyle extends AbstractAction
 {
     /**
-     * Required fields that must be present in the project data
+     * Required fields that must be present in the document style data
      */
     protected array $requiredFields = [
         'name',
@@ -24,14 +23,11 @@ class StoreProject extends AbstractAction
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
-        'company_id' => ProductiveCompany::class,
-        'project_manager_id' => ProductivePeople::class,
-        'last_actor_id' => ProductivePeople::class,
-        'workflow_id' => ProductiveWorkflow::class
+        'attachment_id' => ProductiveAttachment::class
     ];
 
     /**
-     * Store a project in the database
+     * Store a document style in the database
      *
      * @param array $parameters
      * @return bool
@@ -39,43 +35,38 @@ class StoreProject extends AbstractAction
      */
     public function handle(array $parameters = []): bool
     {
-        $projectData = $parameters['projectData'] ?? null;
+        $documentStyleData = $parameters['documentStyleData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        if (!$projectData) {
-            throw new \Exception('Project data is required');
+        if (!$documentStyleData) {
+            throw new \Exception('Document style data is required');
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info("Processing project: {$projectData['id']}");
+                $command->info("Processing document style: {$documentStyleData['id']}");
             }
 
             // Validate basic data structure
-            if (!isset($projectData['id'])) {
+            if (!isset($documentStyleData['id'])) {
                 throw new \Exception("Missing required field 'id' in root data object");
             }
 
-            $attributes = $projectData['attributes'] ?? [];
-            $relationships = $projectData['relationships'] ?? [];
-
-            // Debug log relationships
-            // if ($command instanceof Command) {
-            //     $command->info("Project relationships: " . json_encode($relationships));
-            // }
+            $attributes = $documentStyleData['attributes'] ?? [];
+            $relationships = $documentStyleData['relationships'] ?? [];
 
             // Add type from root level if not in attributes
-            if (!isset($attributes['type']) && isset($projectData['type'])) {
-                $attributes['type'] = $projectData['type'];
+            if (!isset($attributes['type']) && isset($documentStyleData['type'])) {
+                $attributes['type'] = $documentStyleData['type'];
             }
 
             // Validate required fields
-            $this->validateRequiredFields($attributes, $projectData['id'], $command);
+            $this->validateRequiredFields($attributes, $documentStyleData['id'], $command);
 
             // Prepare base data
             $data = [
-                'id' => $projectData['id'],
-                'type' => $attributes['type'] ?? $projectData['type'] ?? 'projects',
+                'id' => $documentStyleData['id'],
+                'type' => $attributes['type'] ?? $documentStyleData['type'] ?? 'document_styles',
             ];
 
             // Add all attributes with safe fallbacks
@@ -87,33 +78,28 @@ class StoreProject extends AbstractAction
             $this->handleJsonFields($data);
 
             // Handle foreign key relationships
-            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Project', $command);
-
-            // Debug log final data
-            // if ($command instanceof Command) {
-            //     $command->info("Final project data: " . json_encode($data));
-            // }
+            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Document Style', $command);
 
             // Validate data types
             $this->validateDataTypes($data);
 
-            // Create or update project
-            ProductiveProject::updateOrCreate(
-                ['id' => $projectData['id']],
+            // Create or update document style
+            ProductiveDocumentStyle::updateOrCreate(
+                ['id' => $documentStyleData['id']],
                 $data
             );
 
             if ($command instanceof Command) {
-                $command->info("Successfully stored project: {$attributes['name']} (ID: {$projectData['id']})");
+                $command->info("Successfully stored document style: {$attributes['name']} (ID: {$documentStyleData['id']})");
             }
 
             return true;
 
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Failed to store project {$projectData['id']}: " . $e->getMessage());
+                $command->error("Failed to store document style {$documentStyleData['id']}: " . $e->getMessage());
             }
-            Log::error("Failed to store project {$projectData['id']}: " . $e->getMessage());
+            Log::error("Failed to store document style {$documentStyleData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -122,11 +108,11 @@ class StoreProject extends AbstractAction
      * Validate that all required fields are present
      *
      * @param array $attributes
-     * @param string $projectId
+     * @param string $documentStyleId
      * @param Command|null $command
      * @throws \Exception
      */
-    protected function validateRequiredFields(array $attributes, string $projectId, ?Command $command): void
+    protected function validateRequiredFields(array $attributes, string $documentStyleId, ?Command $command): void
     {
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
@@ -136,7 +122,7 @@ class StoreProject extends AbstractAction
         }
 
         if (!empty($missingFields)) {
-            $message = "Required fields missing for project {$projectId}: " . implode(', ', $missingFields);
+            $message = "Required fields missing for document style {$documentStyleId}: " . implode(', ', $missingFields);
             if ($command) {
                 $command->error($message);
             }
@@ -152,11 +138,7 @@ class StoreProject extends AbstractAction
     protected function handleJsonFields(array &$data): void
     {
         $jsonFields = [
-            'preferences',
-            'tag_colors',
-            'custom_fields',
-            'task_custom_fields_ids',
-            'task_custom_fields_positions',
+            'styles',
         ];
 
         foreach ($jsonFields as $field) {
@@ -173,17 +155,14 @@ class StoreProject extends AbstractAction
      *
      * @param array $relationships
      * @param array &$data
-     * @param string $projectName
+     * @param string $documentStyleName
      * @param Command|null $command
      */
-    protected function handleForeignKeys(array $relationships, array &$data, string $projectName, ?Command $command): void
+    protected function handleForeignKeys(array $relationships, array &$data, string $documentStyleName, ?Command $command): void
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'company' => 'company_id',
-            'project_manager' => 'project_manager_id',
-            'last_actor' => 'last_actor_id',
-            'workflow' => 'workflow_id'
+            'attachments' => 'attachment_id'
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -198,7 +177,7 @@ class StoreProject extends AbstractAction
 
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Project '{$projectName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Document style '{$documentStyleName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
                     $data[$dbKey] = null;
                 } else {
@@ -225,23 +204,9 @@ class StoreProject extends AbstractAction
     {
         $rules = [
             'name' => 'required|string',
-            'number' => 'required|string',
-            'project_number' => 'required|string',
-            'project_type_id' => 'required|integer',
-            'project_color_id' => 'required|integer',
-            'public_access' => 'boolean',
-            'time_on_tasks' => 'boolean',
-            'template' => 'boolean',
-            'sample_data' => 'boolean',
-            'preferences' => 'nullable|json',
-            'tag_colors' => 'nullable|json',
-            'custom_fields' => 'nullable|json',
-            'task_custom_fields_ids' => 'nullable|json',
-            'task_custom_fields_positions' => 'nullable|json',
-            'company_id' => 'nullable|string',
-            'project_manager_id' => 'nullable|string',
-            'last_actor_id' => 'nullable|string',
-            'workflow_id' => 'nullable|string'
+            'styles' => 'nullable|json',
+
+            'attachment_id' => 'nullable|string'
         ];
 
         $validator = Validator::make($data, $rules);

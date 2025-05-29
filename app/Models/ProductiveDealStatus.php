@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductiveDealStatus extends Model
 {
@@ -32,6 +31,7 @@ class ProductiveDealStatus extends Model
         'probability',
         'lost_reason_enabled',
         'used',
+        
         'pipeline_id'
     ];
 
@@ -51,8 +51,4 @@ class ProductiveDealStatus extends Model
         return $this->belongsTo(ProductivePipeline::class, 'pipeline_id');
     }
 
-    public function deals(): HasMany
-    {
-        return $this->hasMany(ProductiveDeal::class, 'deal_status_id');
-    }
 }

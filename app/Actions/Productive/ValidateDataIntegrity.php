@@ -12,9 +12,10 @@ use App\Models\ProductiveContactEntry;
 use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveTaxRate;
 use App\Models\ProductiveDocumentStyle;
+use App\Models\ProductiveDealStatus;
+use App\Models\ProductiveLostReason;
+use App\Models\ProductiveContract;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 class ValidateDataIntegrity extends AbstractAction
 {
@@ -33,154 +34,212 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info('Validating data integrity...');
             }
 
-            // Document Style Statistics
-            $totalDocumentStyles = ProductiveDocumentStyle::count();
-            $documentStylesWithAttachment = ProductiveDocumentStyle::whereNotNull('attachment_id')->count();
+            // Get statistics for each model
+            $stats = [
+                'companies' => [
+                    'total' => ProductiveCompany::count(),
+                    'with_subsidiary' => ProductiveCompany::whereNotNull('default_subsidiary_id')->count(),
+                    'with_tax_rate' => ProductiveCompany::whereNotNull('default_tax_rate_id')->count(),
+                ],
+                'projects' => [
+                    'total' => ProductiveProject::count(),
+                    'with_company' => ProductiveProject::whereNotNull('company_id')->count(),
+                    'with_project_manager' => ProductiveProject::whereNotNull('project_manager_id')->count(),
+                    'with_last_actor' => ProductiveProject::whereNotNull('last_actor_id')->count(),
+                    'with_workflow' => ProductiveProject::whereNotNull('workflow_id')->count()
+                ],
+                'people' => [
+                    'total' => ProductivePeople::count(),
+                    'with_manager' => ProductivePeople::whereNotNull('manager_id')->count(),
+                    'with_company' => ProductivePeople::whereNotNull('company_id')->count(),
+                    'with_subsidiary' => ProductivePeople::whereNotNull('subsidiary_id')->count(),
+                    'with_apa_id' => ProductivePeople::whereNotNull('apa_id')->count(),
+                    'with_team_id' => ProductivePeople::whereNotNull('team_id')->count()
+                ],
+                'workflows' => [
+                    'total' => ProductiveWorkflow::count(),
+                    'with_workflow_status' => ProductiveWorkflow::whereNotNull('workflow_status_id')->count()
+                ],
+                'document_types' => [
+                    'total' => ProductiveDocumentType::count(),
+                    'with_subsidiary' => ProductiveDocumentType::whereNotNull('subsidiary_id')->count(),
+                    'with_document_style' => ProductiveDocumentType::whereNotNull('document_style_id')->count(),
+                    'with_attachment' => ProductiveDocumentType::whereNotNull('attachment_id')->count(),
+                ],
+                'contact_entries' => [
+                    'total' => ProductiveContactEntry::count(),
+                    'with_company' => ProductiveContactEntry::whereNotNull('company_id')->count(),
+                    'with_person' => ProductiveContactEntry::whereNotNull('person_id')->count(),
+                    'with_invoice' => ProductiveContactEntry::whereNotNull('invoice_id')->count(),
+                    'with_subsidiary' => ProductiveContactEntry::whereNotNull('subsidiary_id')->count(),
+                    'with_purchase_order' => ProductiveContactEntry::whereNotNull('purchase_order_id')->count()
+                ],
+                'subsidiaries' => [
+                    'total' => ProductiveSubsidiary::count(),
+                    'with_contact_entry' => ProductiveSubsidiary::whereNotNull('contact_entry_id')->count(),
+                    'with_custom_domain' => ProductiveSubsidiary::whereNotNull('custom_domain_id')->count(),
+                    'with_tax_rate' => ProductiveSubsidiary::whereNotNull('default_tax_rate_id')->count(),
+                    'with_integration' => ProductiveSubsidiary::whereNotNull('integration_id')->count(),
+                ],
+                'tax_rates' => [
+                    'total' => ProductiveTaxRate::count(),
+                    'with_subsidiary' => ProductiveTaxRate::whereNotNull('subsidiary_id')->count(),
+                ],
+                'document_styles' => [
+                    'total' => ProductiveDocumentStyle::count(),
+                    'with_attachment' => ProductiveDocumentStyle::whereNotNull('attachment_id')->count(),
+                ],
+                'deal_statuses' => [
+                    'total' => ProductiveDealStatus::count(),
+                    'with_pipeline' => ProductiveDealStatus::whereNotNull('pipeline_id')->count()
+                ],
+                'lost_reasons' => [
+                    'total' => ProductiveLostReason::count(),
+                ],
+                'contracts' => [
+                    'total' => ProductiveContract::count(),
+                    'with_deal' => ProductiveContract::whereNotNull('deal_id')->count(),
+                ],
+                'deals' => [
+                    'total' => ProductiveDeal::count(),
+                    'with_creator' => ProductiveDeal::whereNotNull('creator_id')->count(),
+                    'with_company' => ProductiveDeal::whereNotNull('company_id')->count(),
+                    'with_document_type' => ProductiveDeal::whereNotNull('document_type_id')->count(),
+                    'with_responsible_person' => ProductiveDeal::whereNotNull('responsible_id')->count(),
+                    'with_deal_status' => ProductiveDeal::whereNotNull('deal_status_id')->count(),
+                    'with_project' => ProductiveDeal::whereNotNull('project_id')->count(),
+                    'with_lost_reason' => ProductiveDeal::whereNotNull('lost_reason_id')->count(),
+                    'with_contract' => ProductiveDeal::whereNotNull('contract_id')->count(),
+                    'with_contact' => ProductiveDeal::whereNotNull('contact_id')->count(),
+                    'with_subsidiary' => ProductiveDeal::whereNotNull('subsidiary_id')->count(),
+                    'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
+                    'with_apa' => ProductiveDeal::whereNotNull('apa_id')->count(),
+                ],
+            ];
 
-            // Tax Rate Statistics
-            $totalTaxRates = ProductiveTaxRate::count();
-            $taxRatesWithSubsidiary = ProductiveTaxRate::whereNotNull('subsidiary_id')->count();
+            // Output report
+            if ($command instanceof Command) {
+                $command->info('Data Integrity Report:');
+                $command->info('=====================');
 
-            // Subsidiary Statistics
-            $totalSubsidiaries = ProductiveSubsidiary::count();
-            $subsidiariesWithBillFrom = ProductiveSubsidiary::whereNotNull('contact_entry_id')->count();
-            $subsidiariesWithCustomDomain = ProductiveSubsidiary::whereNotNull('custom_domain_id')->count();
-            $subsidiariesWithTaxRate = ProductiveSubsidiary::whereNotNull('default_tax_rate_id')->count();
-            $subsidiariesWithIntegration = ProductiveSubsidiary::whereNotNull('integration_id')->count();
+                // Companies
+                $command->info("\nCompanies:");
+                $command->info("- Total: {$stats['companies']['total']}");
+                $command->info("- With Subsidiary: {$stats['companies']['with_subsidiary']}");
+                $command->info("- With Tax Rate: {$stats['companies']['with_tax_rate']}");
 
-            // Company Statistics
-            $totalCompanies = ProductiveCompany::count();
-            $companiesWithSubsidiary = ProductiveCompany::whereNotNull('default_subsidiary_id')->count();
-            $companiesWithTaxRate = ProductiveCompany::whereNotNull('default_tax_rate_id')->count();
+                // Projects
+                $command->info("\nProjects:");
+                $command->info("- Total: {$stats['projects']['total']}");
+                $command->info("- With Company: {$stats['projects']['with_company']}");
+                $command->info("- With Project Manager: {$stats['projects']['with_project_manager']}");
+                $command->info("- With Last Actor: {$stats['projects']['with_last_actor']}");
+                $command->info("- With Workflow: {$stats['projects']['with_workflow']}");
 
-            // People Statistics
-            $totalPeople = ProductivePeople::count();
-            $peopleWithManager = ProductivePeople::whereNotNull('manager_id')->count();
-            $peopleWithCompany = ProductivePeople::whereNotNull('company_id')->count();
-            $peopleWithSubsidiary = ProductivePeople::whereNotNull('subsidiary_id')->count();
-            $peopleWithApa = ProductivePeople::whereNotNull('apa_id')->count();
-            $peopleWithTeam = ProductivePeople::whereNotNull('team_id')->count();
+                // People
+                $command->info("\nPeople:");
+                $command->info("- Total: {$stats['people']['total']}");
+                $command->info("- With Manager: {$stats['people']['with_manager']}");
+                $command->info("- With Company: {$stats['people']['with_company']}");
+                $command->info("- With Subsidiary: {$stats['people']['with_subsidiary']}");
+                $command->info("- With APA: {$stats['people']['with_apa_id']}");
+                $command->info("- With Team: {$stats['people']['with_team_id']}");
 
-            // Workflow Statistics
-            $totalWorkflows = ProductiveWorkflow::count();
-            $workflowWithWS = ProductiveWorkflow::whereNotNull('workflow_status_id')->count();
+                // Workflows
+                $command->info("\nWorkflows:");
+                $command->info("- Total: {$stats['workflows']['total']}");
+                $command->info("- With Workflow Status: {$stats['workflows']['with_workflow_status']}");
 
-            // Project Statistics
-            $totalProjects = ProductiveProject::count();
-            $projectsWithCompany = ProductiveProject::whereNotNull('company_id')->count();
-            $projectsWithProjectManager = ProductiveProject::whereNotNull('project_manager_id')->count();
-            $projectsWithLastActor = ProductiveProject::whereNotNull('last_actor_id')->count();
-            $projectsWithWorkflow = ProductiveProject::whereNotNull('workflow_id')->count();
+                // Document Types
+                $command->info("\nDocument Types:");
+                $command->info("- Total: {$stats['document_types']['total']}");
+                $command->info("- With Subsidiary: {$stats['document_types']['with_subsidiary']}");
+                $command->info("- With Document Style: {$stats['document_types']['with_document_style']}");
+                $command->info("- With Attachment: {$stats['document_types']['with_attachment']}");
 
-            // Deal Statistics
-            $totalDeals = ProductiveDeal::count();
-            $dealsWithSubsidiary = ProductiveDeal::whereNotNull('subsidiary_id')->count();
-            $dealsWithCreator = ProductiveDeal::whereNotNull('creator_id')->count();
-            $dealsWithCompany = ProductiveDeal::whereNotNull('company_id')->count();
-            $dealsWithDT = ProductiveDeal::whereNotNull('document_type_id')->count();
-            $dealsWithResponsible = ProductiveDeal::whereNotNull('responsible_id')->count();
-            $dealsWithDealStatus = ProductiveDeal::whereNotNull('deal_status_id')->count();
-            $dealsWithProject = ProductiveDeal::whereNotNull('project_id')->count();
-            $dealsWithLostReason = ProductiveDeal::whereNotNull('lost_reason_id')->count();
-            $dealsWithContract = ProductiveDeal::whereNotNull('contract_id')->count();
-            $dealsWithContact = ProductiveDeal::whereNotNull('contact_id')->count();
-            $dealsWithSubsidiary = ProductiveDeal::whereNotNull('subsidiary_id')->count();
-            $dealsWithTaxRate = ProductiveDeal::whereNotNull('tax_rate_id')->count();
-            $dealsWithApa = ProductiveDeal::whereNotNull('apa_id')->count();
+                // Contact Entries
+                $command->info("\nContact Entries:");
+                $command->info("- Total: {$stats['contact_entries']['total']}");
+                $command->info("- With Company: {$stats['contact_entries']['with_company']}");
+                $command->info("- With Person: {$stats['contact_entries']['with_person']}");
+                $command->info("- With Invoice: {$stats['contact_entries']['with_invoice']}");
+                $command->info("- With Subsidiary: {$stats['contact_entries']['with_subsidiary']}");
+                $command->info("- With Purchase Order: {$stats['contact_entries']['with_purchase_order']}");
 
-            // Document Type Statistics
-            $totalDocumentTypes = ProductiveDocumentType::count();
-            $documentTypesWithSubsidiary = ProductiveDocumentType::whereNotNull('subsidiary_id')->count();
-            $documentTypesWithDS = ProductiveDocumentType::whereNotNull('document_style_id')->count();
-            $documentTypesWithAttachment = ProductiveDocumentType::whereNotNull('attachment_id')->count();
+                // Subsidiaries
+                $command->info("\nSubsidiaries:");
+                $command->info("- Total: {$stats['subsidiaries']['total']}");
+                $command->info("- With Contact Entry: {$stats['subsidiaries']['with_contact_entry']}");
+                $command->info("- With Custom Domain: {$stats['subsidiaries']['with_custom_domain']}");
+                $command->info("- With Tax Rate: {$stats['subsidiaries']['with_tax_rate']}");
+                $command->info("- With Integration: {$stats['subsidiaries']['with_integration']}");
 
-            // Contact Entry Statistics
-            $totalContactEntries = ProductiveContactEntry::count();
-            $contactEntriesWithCompany = ProductiveContactEntry::whereNotNull('company_id')->count();
-            $contactEntriesWithPeople = ProductiveContactEntry::whereNotNull('person_id')->count();
-            $contactEntriesWithInvoice = ProductiveContactEntry::whereNotNull('invoice_id')->count();
-            $contactEntriesWithSubsidiary = ProductiveContactEntry::whereNotNull('subsidiary_id')->count();
-            $contactWithPO = ProductiveContactEntry::whereNotNull('purchase_order_id')->count();
+                // Tax Rates
+                $command->info("\nTax Rates:");
+                $command->info("- Total: {$stats['tax_rates']['total']}");
+                $command->info("- With Subsidiary: {$stats['tax_rates']['with_subsidiary']}");
+
+                // Document Styles
+                $command->info("\nDocument Styles:");
+                $command->info("- Total: {$stats['document_styles']['total']}");
+                $command->info("- With Attachment: {$stats['document_styles']['with_attachment']}");
+
+                // Deal Statuses
+                $command->info("\nDeal Statuses:");
+                $command->info("- Total: {$stats['deal_statuses']['total']}");
+                $command->info("- With Pipeline: {$stats['deal_statuses']['with_pipeline']}");
+
+                // Lost Reasons
+                $command->info("\nLost Reasons:");
+                $command->info("- Total: {$stats['lost_reasons']['total']}");
+
+                // Contracts
+                $command->info("\nContracts:");
+                $command->info("- Total: {$stats['contracts']['total']}");
+                $command->info("- With Deal: {$stats['contracts']['with_deal']}");
+
+                // Deals
+                $command->info("\nDeals:");
+                $command->info("- Total: {$stats['deals']['total']}");
+                $command->info("- With Creator: {$stats['deals']['with_creator']}");
+                $command->info("- With Company: {$stats['deals']['with_company']}");
+                $command->info("- With Document Type: {$stats['deals']['with_document_type']}");
+                $command->info("- With Responsible Person: {$stats['deals']['with_responsible_person']}");
+                $command->info("- With Deal Status: {$stats['deals']['with_deal_status']}");
+                $command->info("- With Project: {$stats['deals']['with_project']}");
+                $command->info("- With Lost Reason: {$stats['deals']['with_lost_reason']}");
+                $command->info("- With Contract: {$stats['deals']['with_contract']}");
+                $command->info("- With Contact: {$stats['deals']['with_contact']}");
+                $command->info("- With Subsidiary: {$stats['deals']['with_subsidiary']}");
+                $command->info("- With Tax Rate: {$stats['deals']['with_tax_rate']}");
+                $command->info("- With APA: {$stats['deals']['with_apa']}");
+            }
+
+            // Validate relationships
+            $warnings = [];
 
             if ($command instanceof Command) {
-                $command->info('=== Data Integrity Report ===');
-
-                $command->info('Document Styles:');
-                $command->info("  Total: {$totalDocumentStyles}");
-                $command->info("  With Attachment: {$documentStylesWithAttachment}");
-
-                $command->info('Tax Rates:');
-                $command->info("  Total: {$totalTaxRates}");
-                $command->info("  With Subsidiary: {$taxRatesWithSubsidiary}");
-
-                $command->info('Subsidiaries:');
-                $command->info("  Total: {$totalSubsidiaries}");
-                $command->info("  With Bill From: {$subsidiariesWithBillFrom}");
-                $command->info("  With Custom Domain: {$subsidiariesWithCustomDomain}");
-                $command->info("  With Tax Rate: {$subsidiariesWithTaxRate}");
-                $command->info("  With Integration: {$subsidiariesWithIntegration}");
-
-                $command->info('Companies:');
-                $command->info("  Total: {$totalCompanies}");
-                $command->info("  With Subsidiary: {$companiesWithSubsidiary}");
-                $command->info("  With Tax Rate: {$companiesWithTaxRate}");
-
-                $command->info('People:');
-                $command->info("  Total: {$totalPeople}");
-                $command->info("  With Manager: {$peopleWithManager}");
-                $command->info("  With Company: {$peopleWithCompany}");
-                $command->info("  With Subsidiary: {$peopleWithSubsidiary}");
-                $command->info("  With Team: {$peopleWithTeam}");
-                $command->info("  With APA: {$peopleWithApa}");
-                
-
-                $command->info('Workflows:');
-                $command->info("  Total: {$totalWorkflows}");
-                $command->info("  With Workflow: {$workflowWithWS}");
-
-                $command->info('Projects:');
-                $command->info("  Total: {$totalProjects}");
-                $command->info("  With Company: {$projectsWithCompany}");
-                $command->info("  With Project Manager: {$projectsWithProjectManager}");
-                $command->info("  With Last Actor: {$projectsWithLastActor}");
-                $command->info("  With Workflow: {$projectsWithWorkflow}");
-
-                $command->info('Deals:');
-                $command->info("  Total: {$totalDeals}");
-                $command->info("  With Subsidiary: {$dealsWithSubsidiary}");
-                $command->info("  With Creator: {$dealsWithCreator}");
-                $command->info("  With Company: {$dealsWithCompany}");
-                $command->info("  With Document Type: {$dealsWithDT}");
-                $command->info("  With Responsible: {$dealsWithResponsible}");
-                $command->info("  With Deal Status: {$dealsWithDealStatus}");
-                $command->info("  With Project: {$dealsWithProject}");
-                $command->info("  With Lost Reason: {$dealsWithLostReason}");
-                $command->info("  With Contract: {$dealsWithContract}");
-                $command->info("  With Contact: {$dealsWithContact}");
-                $command->info("  With Subsidiary: {$dealsWithSubsidiary}");
-                $command->info("  With Tax Rate: {$dealsWithTaxRate}");
-                $command->info("  With APA: {$dealsWithApa}");
-
-                $command->info('Document Types:');
-                $command->info("  Total: {$totalDocumentTypes}");
-                $command->info("  With Subsidiary: {$documentTypesWithSubsidiary}");
-                $command->info("  With Document Style: {$documentTypesWithDS}");
-                $command->info("  With Attachment: {$documentTypesWithAttachment}");
-
-                $command->info('Contact Entries:');
-                $command->info("  Total: {$totalContactEntries}");
-                $command->info("  With Company: {$contactEntriesWithCompany}");
-                $command->info("  With People: {$contactEntriesWithPeople}");
-                $command->info("  With Invoice: {$contactEntriesWithInvoice}");
-                $command->info("  With Subsidiary: {$contactEntriesWithSubsidiary}");
-                $command->info("  With PO: {$contactWithPO}");
-
-                // Validate relationships
                 $this->validateRelationships($command);
             }
 
-            return true;
+            // Check for deals with invalid lost reason relationships
+            $invalidLostReasonDeals = ProductiveDeal::whereNotNull('lost_reason_id')
+                ->whereNotIn('lost_reason_id', ProductiveLostReason::pluck('id'))
+                ->count();
+            if ($invalidLostReasonDeals > 0) {
+                $warnings[] = "Found {$invalidLostReasonDeals} deals with invalid lost reason relationships";
+            }
+            // Output warnings if any
+            if (!empty($warnings)) {
+                if ($command instanceof Command) {
+                    $command->warn("\nWarnings:");
+                    foreach ($warnings as $warning) {
+                        $command->warn("- {$warning}");
+                    }
+                }
+            }
 
+            return true;
         } catch (\Exception $e) {
             if ($command instanceof Command) {
                 $command->error('Error validating data integrity: ' . $e->getMessage());
@@ -230,18 +289,6 @@ class ValidateDataIntegrity extends AbstractAction
             $command->warn("Found {$projectsWithoutCompany} projects without company relationships");
         }
 
-        // Deals with company relationships
-        $dealsWithoutCompany = ProductiveDeal::whereDoesntHave('company')->count();
-        if ($dealsWithoutCompany > 0) {
-            $command->warn("Found {$dealsWithoutCompany} deals without company relationships");
-        }
-
-        // Deals with project relationships
-        $dealsWithoutProject = ProductiveDeal::whereDoesntHave('project')->count();
-        if ($dealsWithoutProject > 0) {
-            $command->warn("Found {$dealsWithoutProject} deals without project relationships");
-        }
-
         // Document Types with subsidiary relationships
         $documentTypesWithoutSubsidiary = ProductiveDocumentType::whereDoesntHave('subsidiary')->count();
         if ($documentTypesWithoutSubsidiary > 0) {
@@ -258,6 +305,30 @@ class ValidateDataIntegrity extends AbstractAction
         $contactEntriesWithoutPerson = ProductiveContactEntry::whereDoesntHave('person')->count();
         if ($contactEntriesWithoutPerson > 0) {
             $command->warn("Found {$contactEntriesWithoutPerson} contact entries without person relationships");
+        }
+
+        // Deals with company relationships
+        $dealsWithoutCompany = ProductiveDeal::whereDoesntHave('company')->count();
+        if ($dealsWithoutCompany > 0) {
+            $command->warn("Found {$dealsWithoutCompany} deals without company relationships");
+        }
+
+        // Deals with project relationships
+        $dealsWithoutProject = ProductiveDeal::whereDoesntHave('project')->count();
+        if ($dealsWithoutProject > 0) {
+            $command->warn("Found {$dealsWithoutProject} deals without project relationships");
+        }
+
+        // Deals with lost reason relationships
+        $dealsWithoutLostReason = ProductiveDeal::whereDoesntHave('lostReason')->whereNotNull('lost_reason_id')->count();
+        if ($dealsWithoutLostReason > 0) {
+            $command->warn("Found {$dealsWithoutLostReason} deals with invalid lost reason relationships");
+        }
+
+        // Contracts with deal relationships
+        $contractsWithoutDeal = ProductiveContract::whereDoesntHave('deal')->whereNotNull('deal_id')->count();
+        if ($contractsWithoutDeal > 0) {
+            $command->warn("Found {$contractsWithoutDeal} contracts with invalid deal relationships");
         }
     }
 }

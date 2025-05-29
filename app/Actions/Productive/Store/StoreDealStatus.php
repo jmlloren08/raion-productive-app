@@ -1,32 +1,35 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
-use App\Models\ProductiveWorkflow;
-use App\Models\ProductiveWorkflowStatus;
+use App\Actions\Productive\AbstractAction;
+use App\Models\ProductiveDealStatus;
+use App\Models\ProductivePipeline;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class StoreWorkflow extends AbstractAction
+class StoreDealStatus extends AbstractAction
 {
     /**
-     * Required fields that must be present in the workflow data
+     * Required fields that must be present in the deal status data
      */
     protected array $requiredFields = [
         'name',
+        'position',
+        'status_id',
     ];
 
     /**
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
-        'workflow_status_id' => ProductiveWorkflowStatus::class
+        'pipeline_id' => ProductivePipeline::class
     ];
 
     /**
-     * Store a workflow in the database
+     * Store a deal status in the database
      *
      * @param array $parameters
      * @return bool
@@ -34,43 +37,38 @@ class StoreWorkflow extends AbstractAction
      */
     public function handle(array $parameters = []): bool
     {
-        $workflowData = $parameters['workflowData'] ?? null;
+        $dealStatusData = $parameters['dealStatusData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        if (!$workflowData) {
-            throw new \Exception('Workflow data is required');
+        if (!$dealStatusData) {
+            throw new \Exception('Deal status data is required');
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info("Processing workflow: {$workflowData['id']}");
+                $command->info("Processing deal status: {$dealStatusData['id']}");
             }
 
             // Validate basic data structure
-            if (!isset($workflowData['id'])) {
+            if (!isset($dealStatusData['id'])) {
                 throw new \Exception("Missing required field 'id' in root data object");
             }
 
-            $attributes = $workflowData['attributes'] ?? [];
-            $relationships = $workflowData['relationships'] ?? [];
-
-            // Debug log relationships
-            // if ($command instanceof Command) {
-            //     $command->info("Workflow relationships: " . json_encode($relationships));
-            // }
+            $attributes = $dealStatusData['attributes'] ?? [];
+            $relationships = $dealStatusData['relationships'] ?? [];
 
             // Add type from root level if not in attributes
-            if (!isset($attributes['type']) && isset($workflowData['type'])) {
-                $attributes['type'] = $workflowData['type'];
+            if (!isset($attributes['type']) && isset($dealStatusData['type'])) {
+                $attributes['type'] = $dealStatusData['type'];
             }
 
             // Validate required fields
-            $this->validateRequiredFields($attributes, $workflowData['id'], $command);
+            $this->validateRequiredFields($attributes, $dealStatusData['id'], $command);
 
             // Prepare base data
             $data = [
-                'id' => $workflowData['id'],
-                'type' => $attributes['type'] ?? $workflowData['type'] ?? 'workflow',
+                'id' => $dealStatusData['id'],
+                'type' => $attributes['type'] ?? $dealStatusData['type'] ?? 'deal_statuses',
             ];
 
             // Add all attributes with safe fallbacks
@@ -79,33 +77,28 @@ class StoreWorkflow extends AbstractAction
             }
 
             // Handle foreign key relationships
-            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Workflow', $command);
-
-            // Debug log final data
-            // if ($command instanceof Command) {
-            //     $command->info("Final workflow data: " . json_encode($data));
-            // }
+            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Deal Status', $command);
 
             // Validate data types
             $this->validateDataTypes($data);
 
-            // Create or update workflow
-            ProductiveWorkflow::updateOrCreate(
-                ['id' => $workflowData['id']],
+            // Create or update deal status
+            ProductiveDealStatus::updateOrCreate(
+                ['id' => $dealStatusData['id']],
                 $data
             );
 
             if ($command instanceof Command) {
-                $command->info("Successfully stored workflow: {$attributes['name']} (ID: {$workflowData['id']})");
+                $command->info("Successfully stored deal status: {$attributes['name']} (ID: {$dealStatusData['id']})");
             }
 
             return true;
 
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Failed to store workflow {$workflowData['id']}: " . $e->getMessage());
+                $command->error("Failed to store deal status {$dealStatusData['id']}: " . $e->getMessage());
             }
-            Log::error("Failed to store workflow {$workflowData['id']}: " . $e->getMessage());
+            Log::error("Failed to store deal status {$dealStatusData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -114,11 +107,11 @@ class StoreWorkflow extends AbstractAction
      * Validate that all required fields are present
      *
      * @param array $attributes
-     * @param string $workflowId
+     * @param string $dealStatusId
      * @param Command|null $command
      * @throws \Exception
      */
-    protected function validateRequiredFields(array $attributes, string $workflowId, ?Command $command): void
+    protected function validateRequiredFields(array $attributes, string $dealStatusId, ?Command $command): void
     {
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
@@ -128,7 +121,7 @@ class StoreWorkflow extends AbstractAction
         }
 
         if (!empty($missingFields)) {
-            $message = "Required fields missing for workflow {$workflowId}: " . implode(', ', $missingFields);
+            $message = "Required fields missing for deal status {$dealStatusId}: " . implode(', ', $missingFields);
             if ($command) {
                 $command->error($message);
             }
@@ -141,14 +134,14 @@ class StoreWorkflow extends AbstractAction
      *
      * @param array $relationships
      * @param array &$data
-     * @param string $workflowName
+     * @param string $dealStatusName
      * @param Command|null $command
      */
-    protected function handleForeignKeys(array $relationships, array &$data, string $workflowName, ?Command $command): void
+    protected function handleForeignKeys(array $relationships, array &$data, string $dealStatusName, ?Command $command): void
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'workflow_statuses' => 'workflow_status_id'
+            'pipeline' => 'pipeline_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -163,7 +156,7 @@ class StoreWorkflow extends AbstractAction
 
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Workflow '{$workflowName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Deal status '{$dealStatusName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
                     $data[$dbKey] = null;
                 } else {
@@ -190,8 +183,16 @@ class StoreWorkflow extends AbstractAction
     {
         $rules = [
             'name' => 'required|string',
-            'archived_at' => 'nullable|date',
-            'workflow_status_id' => 'nullable|string',
+            'position' => 'required|integer',
+            'color_id' => 'nullable|integer',
+            'time_tracking_enabled' => 'boolean',
+            'expense_tracking_enabled' => 'boolean',
+            'booking_tracking_enabled' => 'boolean',
+            'status_id' => 'required|integer',
+            'probability_enabled' => 'boolean',
+            'probability' => 'nullable|numeric|min:0|max:100',
+            'lost_reason_enabled' => 'boolean',
+            'used' => 'boolean',
         ];
 
         $validator = Validator::make($data, $rules);
@@ -200,4 +201,4 @@ class StoreWorkflow extends AbstractAction
             throw new ValidationException($validator);
         }
     }
-}
+} 

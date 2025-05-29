@@ -13,20 +13,18 @@ return new class extends Migration
     {
         Schema::create('productive_contracts', function (Blueprint $table) {
             // Primary key
-            $table->id();
-            $table->string('type')->default('contract'); // Type of contract, e.g., 'service', 'employment', etc.
+            $table->id('id')->primary();
+            $table->string('type')->default('contracts'); // Type of contract, e.g., 'service', 'employment', etc.
             // Core attributes
             $table->date('ends_on')->nullable();
-            $table->date('starts_on');
-            $table->date('next_occurrence_on');
-            $table->unsignedBigInteger('interval_id');
+            $table->date('starts_on')->nullable();
+            $table->date('next_occurrence_on')->nullable();
+            $table->unsignedBigInteger('interval_id')->nullable();
             $table->boolean('copy_purchase_order_number')->default(false);
             $table->boolean('copy_expenses')->default(false);
             $table->boolean('use_rollover_hours')->default(false);
-            // Foreign keys for relationships
-            $table->foreignId('organization_id')->nullable();
 
-            $table->json('template')->nullable(); 
+            $table->string('deal_id')->nullable(); // JSON field for template data
 
             $table->timestamps();
             $table->softDeletes();

@@ -1,33 +1,21 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchDeals extends AbstractAction
+class FetchLostReasons extends AbstractAction
 {
     /**
-     * Define include relationships for deals
+     * Define include relationships for lost reasons
      * 
      * @var array
-     */    
+     */
     protected array $includeRelationships = [
-        'creator',
-        'company',
-        'document_type',
-        'responsible',
-        'deal_status',
-        'project',
-        'lost_reason',
-        'contract',
-        'contact',
-        'subsidiary',
-        'template',
-        'tax_rate',
-        'origin_deal',
-        'approval_policy_assignment',
-        'next_todo'
+        'company'
     ];
 
     /**
@@ -36,26 +24,12 @@ class FetchDeals extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['creator'],
         ['company'],
-        ['document_type'],
-        ['responsible'],
-        ['deal_status'],
-        ['project'],
-        ['lost_reason'],
-        ['contract'],
-        ['contact'],
-        ['subsidiary'],
-        ['template'],
-        ['tax_rate'],
-        ['origin_deal'],
-        ['approval_policy_assignment'],
-        ['next_todo'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch deals from the Productive API
+     * Fetch lost reasons from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -68,17 +42,17 @@ class FetchDeals extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'deals' => [],
+                'lost_reasons' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching deals...');
+                $command->info('Fetching lost reasons...');
             }
 
-            $allDeals = [];
+            $allLostReasons = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -86,18 +60,16 @@ class FetchDeals extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for deals
-                    $response = $apiClient->get("deals", [
-                        'include' => $includeParam,
+                    $response = $apiClient->get("lost_reasons", [
+                        // 'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                        'sort' => 'name'
                     ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch deals: ' . $response->body());
+                        throw new \Exception('Failed to fetch lost reasons: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -109,22 +81,22 @@ class FetchDeals extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'deals' => [],
+                            'lost_reasons' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $deals = $responseBody['data'];
+                    $lostReasons = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $deals = $processIncludedAction->handle([
+                    $lostReasons = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $deals,
+                        'resources' => $lostReasons,
                         'command' => $command
                     ]);
 
-                    $allDeals = array_merge($allDeals, $deals);
+                    $allLostReasons = array_merge($allLostReasons, $lostReasons);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -132,22 +104,22 @@ class FetchDeals extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($deals) < $pageSize) {
+                    if (count($lostReasons) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching deals page {$page}...");
+                            $command->info("Fetching lost reasons page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($deals) . " deals from page " . ($page - 1));
+                        $command->info("Fetched " . count($lostReasons) . " lost reasons from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch deals page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch lost reasons page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -165,55 +137,55 @@ class FetchDeals extends AbstractAction
 
                     return [
                         'success' => false,
-                        'deals' => [],
-                        'error' => 'Error fetching deals page ' . $page . ': ' . $e->getMessage()
+                        'lost_reasons' => [],
+                        'error' => 'Error fetching lost reasons page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allDeals) . ' deals in total');
+                $command->info('Found ' . count($allLostReasons) . ' lost reasons in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allDeals);
-                $this->logRelationshipStats($relationshipStats, count($allDeals), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allLostReasons);
+                $this->logRelationshipStats($relationshipStats, count($allLostReasons), $command);
             }
 
             return [
                 'success' => true,
-                'deals' => $allDeals
+                'lost_reasons' => $allLostReasons
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in deals fetch process: " . $e->getMessage());
+                $command->error("Error in lost reasons fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in deals fetch process: " . $e->getMessage());
+            Log::error("Error in lost reasons fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'deals' => [],
-                'error' => 'Error in deals fetch process: ' . $e->getMessage()
+                'lost_reasons' => [],
+                'error' => 'Error in lost reasons fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for deals
+     * Calculate relationship statistics for lost reasons
      *
-     * @param array $deals
+     * @param array $lostReasons
      * @return array
      */
-    protected function calculateRelationshipStats(array $deals): array
+    protected function calculateRelationshipStats(array $lostReasons): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($deals as $deal) {
-            if (isset($deal['relationships'])) {
+        foreach ($lostReasons as $lostReason) {
+            if (isset($lostReason['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($deal['relationships'][$relationship]['data']['id']) ||
-                        (isset($deal['relationships'][$relationship]['data']) && is_array($deal['relationships'][$relationship]['data']))
+                        isset($lostReason['relationships'][$relationship]['data']['id']) ||
+                        (isset($lostReason['relationships'][$relationship]['data']) && is_array($lostReason['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -228,16 +200,16 @@ class FetchDeals extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalDeals
+     * @param int $totalLostReasons
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalDeals, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalLostReasons, Command $command): void
     {
-        if ($totalDeals > 0) {
+        if ($totalLostReasons > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalDeals) * 100, 2);
-                $command->info("Deals with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalLostReasons) * 100, 2);
+                $command->info("Lost reasons with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }
@@ -259,4 +231,4 @@ class FetchDeals extends AbstractAction
         }
         $command->info("Page {$page} included data: " . json_encode($includedTypes));
     }
-}
+} 

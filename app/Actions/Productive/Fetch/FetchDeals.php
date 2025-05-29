@@ -1,21 +1,35 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchDocumentTypes extends AbstractAction
+class FetchDeals extends AbstractAction
 {
     /**
-     * Define include relationships for document types
+     * Define include relationships for deals
      * 
      * @var array
-     */
+     */    
     protected array $includeRelationships = [
+        'creator',
+        'company',
+        'document_type',
+        'responsible',
+        'deal_status',
+        'project',
+        'lost_reason',
+        'contract',
+        'contact',
         'subsidiary',
-        'document_style',
-        'attachments',
+        'template',
+        'tax_rate',
+        'origin_deal',
+        'approval_policy_assignment',
+        'next_todo'
     ];
 
     /**
@@ -24,14 +38,26 @@ class FetchDocumentTypes extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
+        ['creator'],
+        ['company'],
+        ['document_type'],
+        ['responsible'],
+        ['deal_status'],
+        ['project'],
+        ['lost_reason'],
+        ['contract'],
+        ['contact'],
         ['subsidiary'],
-        ['document_style'],
-        ['attachments'],
+        ['template'],
+        ['tax_rate'],
+        ['origin_deal'],
+        ['approval_policy_assignment'],
+        ['next_todo'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch document types from the Productive API
+     * Fetch deals from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -44,17 +70,17 @@ class FetchDocumentTypes extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'document_types' => [],
+                'deals' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching document types...');
+                $command->info('Fetching deals...');
             }
 
-            $allDocumentTypes = [];
+            $allDeals = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -62,21 +88,22 @@ class FetchDocumentTypes extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for document types
-                    $response = $apiClient->get("document_types", [
+                    // Following Productive API docs for deals
+                    $response = $apiClient->get("deals", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
+                        'sort' => 'name'
                     ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch document types: ' . $response->body());
+                        throw new \Exception('Failed to fetch deals: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
-                    
+
                     if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
                         if ($command instanceof Command) {
                             $command->error("Invalid API response format on page {$page}. Missing 'data' array.");
@@ -84,22 +111,22 @@ class FetchDocumentTypes extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'document_types' => [],
+                            'deals' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $documentTypes = $responseBody['data'];
-                    
+                    $deals = $responseBody['data'];
+
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $documentTypes = $processIncludedAction->handle([
+                    $deals = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $documentTypes,
+                        'resources' => $deals,
                         'command' => $command
                     ]);
 
-                    $allDocumentTypes = array_merge($allDocumentTypes, $documentTypes);
+                    $allDeals = array_merge($allDeals, $deals);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -107,23 +134,22 @@ class FetchDocumentTypes extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($documentTypes) < $pageSize) {
+                    if (count($deals) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching document types page {$page}...");
+                            $command->info("Fetching deals page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($documentTypes) . " document types from page " . ($page - 1));
+                        $command->info("Fetched " . count($deals) . " deals from page " . ($page - 1));
                     }
-
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch document types page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch deals page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -141,56 +167,55 @@ class FetchDocumentTypes extends AbstractAction
 
                     return [
                         'success' => false,
-                        'document_types' => [],
-                        'error' => 'Error fetching document types page ' . $page . ': ' . $e->getMessage()
+                        'deals' => [],
+                        'error' => 'Error fetching deals page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allDocumentTypes) . ' document types in total');
-                
+                $command->info('Found ' . count($allDeals) . ' deals in total');
+
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allDocumentTypes);
-                $this->logRelationshipStats($relationshipStats, count($allDocumentTypes), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allDeals);
+                $this->logRelationshipStats($relationshipStats, count($allDeals), $command);
             }
 
             return [
                 'success' => true,
-                'document_types' => $allDocumentTypes
+                'deals' => $allDeals
             ];
-
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in document types fetch process: " . $e->getMessage());
+                $command->error("Error in deals fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in document types fetch process: " . $e->getMessage());
+            Log::error("Error in deals fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'document_types' => [],
-                'error' => 'Error in document types fetch process: ' . $e->getMessage()
+                'deals' => [],
+                'error' => 'Error in deals fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for document types
+     * Calculate relationship statistics for deals
      *
-     * @param array $documentTypes
+     * @param array $deals
      * @return array
      */
-    protected function calculateRelationshipStats(array $documentTypes): array
+    protected function calculateRelationshipStats(array $deals): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($documentTypes as $documentType) {
-            if (isset($documentType['relationships'])) {
+        foreach ($deals as $deal) {
+            if (isset($deal['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($documentType['relationships'][$relationship]['data']['id']) ||
-                        (isset($documentType['relationships'][$relationship]['data']) && is_array($documentType['relationships'][$relationship]['data']))
+                        isset($deal['relationships'][$relationship]['data']['id']) ||
+                        (isset($deal['relationships'][$relationship]['data']) && is_array($deal['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -205,16 +230,16 @@ class FetchDocumentTypes extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalDocumentTypes
+     * @param int $totalDeals
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalDocumentTypes, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalDeals, Command $command): void
     {
-        if ($totalDocumentTypes > 0) {
+        if ($totalDeals > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalDocumentTypes) * 100, 2);
-                $command->info("Document types with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalDeals) * 100, 2);
+                $command->info("Deals with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

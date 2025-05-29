@@ -1,19 +1,24 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchWorkflows extends AbstractAction
+class FetchSubsidiaries extends AbstractAction
 {
     /**
-     * Define include relationships for workflows
+     * Define include relationships for subsidiaries
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'workflow_statuses'
+        'bill_from',
+        'custom_domain',
+        'default_tax_rate',
+        'integration'
     ];
 
     /**
@@ -22,12 +27,15 @@ class FetchWorkflows extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['workflow_statuses'],
-        [] // Empty array means no includes
+        ['bill_from'],
+        ['custom_domain'],
+        ['default_tax_rate'],
+        ['integration'],
+        []  // Empty array means no includes
     ];
 
     /**
-     * Fetch workflows from the Productive API
+     * Fetch subsidiaries from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -40,17 +48,17 @@ class FetchWorkflows extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'workflows' => [],
+                'subsidiaries' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching workflows from Productive API...');
+                $command->info('Fetching subsidiaries...');
             }
 
-            $allWorkflows = [];
+            $allSubsidiaries = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -58,21 +66,22 @@ class FetchWorkflows extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    $response = $apiClient->get('/workflows', [
+                    // Following Productive API docs for subsidiaries
+                    $response = $apiClient->get("subsidiaries", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
                         'sort' => 'name'
-                    ]);
+                    ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch workflows: ' . $response->body());
+                        throw new \Exception('Failed to fetch subsidiaries: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
-
+                    
                     if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
                         if ($command instanceof Command) {
                             $command->error("Invalid API response format on page {$page}. Missing 'data' array.");
@@ -80,22 +89,22 @@ class FetchWorkflows extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'workflows' => [],
+                            'subsidiaries' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $workflows = $responseBody['data'];
-
+                    $subsidiaries = $responseBody['data'];
+                    
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $workflows = $processIncludedAction->handle([
+                    $subsidiaries = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $workflows,
+                        'resources' => $subsidiaries,
                         'command' => $command
                     ]);
 
-                    $allWorkflows = array_merge($allWorkflows, $workflows);
+                    $allSubsidiaries = array_merge($allSubsidiaries, $subsidiaries);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -103,22 +112,22 @@ class FetchWorkflows extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($workflows) < $pageSize) {
+                    if (count($subsidiaries) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching workflows page {$page}...");
+                            $command->info("Fetching subsidiaries page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($workflows) . " workflows from page " . ($page - 1));
+                        $command->info("Fetched " . count($subsidiaries) . " subsidiaries from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch workflows page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch subsidiaries page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -136,55 +145,55 @@ class FetchWorkflows extends AbstractAction
 
                     return [
                         'success' => false,
-                        'workflows' => [],
-                        'error' => 'Error fetching workflows page ' . $page . ': ' . $e->getMessage()
+                        'subsidiaries' => [],
+                        'error' => 'Error fetching subsidiaries page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allWorkflows) . ' workflows in total');
+                $command->info('Found ' . count($allSubsidiaries) . ' subsidiaries in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allWorkflows);
-                $this->logRelationshipStats($relationshipStats, count($allWorkflows), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allSubsidiaries);
+                $this->logRelationshipStats($relationshipStats, count($allSubsidiaries), $command);
             }
 
             return [
                 'success' => true,
-                'workflows' => $allWorkflows
+                'subsidiaries' => $allSubsidiaries
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in workflows fetch process: " . $e->getMessage());
+                $command->error("Error in subsidiaries fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in workflows fetch process: " . $e->getMessage());
+            Log::error("Error in subsidiaries fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'workflows' => [],
-                'error' => 'Error in workflows fetch process: ' . $e->getMessage()
+                'subsidiaries' => [],
+                'error' => 'Error in subsidiaries fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for workflows
+     * Calculate relationship statistics for subsidiaries
      *
-     * @param array $workflows
+     * @param array $subsidiaries
      * @return array
      */
-    protected function calculateRelationshipStats(array $workflows): array
+    protected function calculateRelationshipStats(array $subsidiaries): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($workflows as $workflow) {
-            if (isset($workflow['relationships'])) {
+        foreach ($subsidiaries as $subsidiary) {
+            if (isset($subsidiary['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($workflow['relationships'][$relationship]['data']['id']) ||
-                        (isset($workflow['relationships'][$relationship]['data']) && is_array($workflow['relationships'][$relationship]['data']))
+                        isset($subsidiary['relationships'][$relationship]['data']['id']) ||
+                        (isset($subsidiary['relationships'][$relationship]['data']) && is_array($subsidiary['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -199,16 +208,16 @@ class FetchWorkflows extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalWorkflows
+     * @param int $totalSubsidiaries
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalWorkflows, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalSubsidiaries, Command $command): void
     {
-        if ($totalWorkflows > 0) {
+        if ($totalSubsidiaries > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalWorkflows) * 100, 2);
-                $command->info("Workflows with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalSubsidiaries) * 100, 2);
+                $command->info("Subsidiaries with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

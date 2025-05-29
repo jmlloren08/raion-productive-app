@@ -29,7 +29,6 @@ return new class extends Migration
             $table->boolean('lost_reason_enabled')->default(false);
             $table->boolean('used')->default(false);
             // Relationships
-            $table->foreignId('organization_id')->nullable();
             $table->foreignId('pipeline_id')->nullable();
 
             $table->timestamps();

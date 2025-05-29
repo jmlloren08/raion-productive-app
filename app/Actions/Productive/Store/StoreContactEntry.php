@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
-use App\Models\ProductiveContactEntry;
+use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveCompany;
+use App\Models\ProductiveContactEntry;
 use App\Models\ProductivePeople;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductiveSubsidiary;

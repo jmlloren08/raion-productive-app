@@ -1,19 +1,23 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class FetchDocumentStyles extends AbstractAction
+class FetchCompanies extends AbstractAction
 {
     /**
-     * Define include relationships for document styles
+     * Define include relationships for companies
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'attachments'
+        'default_subsidiary',
+        'default_tax_rate',
     ];
 
     /**
@@ -22,12 +26,13 @@ class FetchDocumentStyles extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['attachments'],
-        []  // Empty array means no includes
+        ['default_subsidiary'],
+        ['default_tax_rate'],
+        [] // Empty array means no includes
     ];
 
     /**
-     * Fetch document styles from the Productive API
+     * Fetch companies from Productive API
      *
      * @param array $parameters
      * @return array
@@ -40,17 +45,17 @@ class FetchDocumentStyles extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'document_styles' => [],
+                'companies' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching document styles...');
+                $command->info('Fetching companies from Productive API...');
             }
 
-            $allDocumentStyles = [];
+            $allCompanies = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -58,17 +63,17 @@ class FetchDocumentStyles extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for document styles
-                    $response = $apiClient->get("document_styles", [
+                    $response = $apiClient->get('/companies', [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                    ])->throw();
+                        'sort' => 'name'
+                    ]);
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch document styles: ' . $response->body());
+                        throw new \Exception('Failed to fetch companies: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -80,22 +85,22 @@ class FetchDocumentStyles extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'document_styles' => [],
+                            'companies' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $documentStyles = $responseBody['data'];
+                    $companies = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $documentStyles = $processIncludedAction->handle([
+                    $companies = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $documentStyles,
+                        'resources' => $companies,
                         'command' => $command
                     ]);
 
-                    $allDocumentStyles = array_merge($allDocumentStyles, $documentStyles);
+                    $allCompanies = array_merge($allCompanies, $companies);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -103,22 +108,22 @@ class FetchDocumentStyles extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($documentStyles) < $pageSize) {
+                    if (count($companies) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching document styles page {$page}...");
+                            $command->info("Fetching companies page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($documentStyles) . " document styles from page " . ($page - 1));
+                        $command->info("Fetched " . count($companies) . " companies from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch document styles page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch companies page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -136,55 +141,55 @@ class FetchDocumentStyles extends AbstractAction
 
                     return [
                         'success' => false,
-                        'document_styles' => [],
-                        'error' => 'Error fetching document styles page ' . $page . ': ' . $e->getMessage()
+                        'companies' => [],
+                        'error' => 'Error fetching companies page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allDocumentStyles) . ' document styles in total');
+                $command->info('Found ' . count($allCompanies) . ' companies in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allDocumentStyles);
-                $this->logRelationshipStats($relationshipStats, count($allDocumentStyles), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allCompanies);
+                $this->logRelationshipStats($relationshipStats, count($allCompanies), $command);
             }
 
             return [
                 'success' => true,
-                'document_styles' => $allDocumentStyles
+                'companies' => $allCompanies
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in document styles fetch process: " . $e->getMessage());
+                $command->error("Error in companies fetch process: " . $e->getMessage());
             }
-
-            Log::error("Error in document styles fetch process: " . $e->getMessage());
+            
+            Log::error("Error in companies fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'document_styles' => [],
-                'error' => 'Error in document styles fetch process: ' . $e->getMessage()
+                'companies' => [],
+                'error' => 'Error in companies fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for document styles
+     * Calculate relationship statistics for companies
      *
-     * @param array $documentStyles
+     * @param array $companies
      * @return array
      */
-    protected function calculateRelationshipStats(array $documentStyles): array
+    protected function calculateRelationshipStats(array $companies): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($documentStyles as $documentStyle) {
-            if (isset($documentStyle['relationships'])) {
+        foreach ($companies as $company) {
+            if (isset($company['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($documentStyle['relationships'][$relationship]['data']['id']) ||
-                        (isset($documentStyle['relationships'][$relationship]['data']) && is_array($documentStyle['relationships'][$relationship]['data']))
+                        isset($company['relationships'][$relationship]['data']['id']) ||
+                        (isset($company['relationships'][$relationship]['data']) && is_array($company['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -199,16 +204,16 @@ class FetchDocumentStyles extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalDocumentStyles
+     * @param int $totalCompanies
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalDocumentStyles, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalCompanies, Command $command): void
     {
-        if ($totalDocumentStyles > 0) {
+        if ($totalCompanies > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalDocumentStyles) * 100, 2);
-                $command->info("Document styles with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalCompanies) * 100, 2);
+                $command->info("Companies with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

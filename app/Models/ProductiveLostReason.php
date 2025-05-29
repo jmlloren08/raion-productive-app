@@ -3,8 +3,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveLostReason extends Model
 {
-    //
+    use SoftDeletes;
+
+    protected $table = 'productive_lost_reasons';
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+    public $timestamps = false;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'id',
+        'type',
+        'name',
+        'archived_at',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'archived_at' => 'timestamp',
+    ];
+
 }

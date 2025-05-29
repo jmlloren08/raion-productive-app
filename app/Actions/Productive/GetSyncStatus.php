@@ -14,6 +14,10 @@ use App\Models\ProductiveTaxRate;
 use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveWorkflow;
 use App\Models\ProductiveContactEntry;
+use App\Models\ProductiveLostReason;
+use App\Models\ProductiveDealStatus;
+use App\Models\ProductiveContract;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -31,6 +35,8 @@ class GetSyncStatus extends AbstractAction
      */
     public function handle(array $parameters = []): array
     {
+        $command = $parameters['command'] ?? null;
+
         try {
             $lastSync = Cache::get('productive_last_sync');
             $isCurrentlySyncing = Cache::get('productive_is_syncing', false);
@@ -38,7 +44,6 @@ class GetSyncStatus extends AbstractAction
             $stats = [
                 'companies_count' => ProductiveCompany::count(),
                 'projects_count' => ProductiveProject::count(),
-                'deals_count' => ProductiveDeal::count(),
                 'time_entries_count' => ProductiveTimeEntry::count(),
                 'time_entry_versions_count' => ProductiveTimeEntryVersion::count(),
                 'document_types_count' => ProductiveDocumentType::count(),
@@ -48,9 +53,21 @@ class GetSyncStatus extends AbstractAction
                 'subsidiaries_count' => ProductiveSubsidiary::count(),
                 'workflows_count' => ProductiveWorkflow::count(),
                 'contact_entries_count' => ProductiveContactEntry::count(),
+                'lost_reasons_count' => ProductiveLostReason::count(),
+                'deal_statuses_count' => ProductiveDealStatus::count(),
+                'contracts_count' => ProductiveContract::count(),
+                'deals_count' => ProductiveDeal::count(),
             ];
             // Get detailed relationship stats
             $relationshipStats = $this->getRelationshipStatsAction->handle();
+
+            if ($command instanceof Command) {
+                $command->info('Sync Status Report:');
+                $command->info('=================');
+                foreach ($stats as $key => $value) {
+                    $command->info("- {$key}: {$value}");
+                }
+            }
 
             return [
                 'last_sync' => $lastSync,
@@ -59,11 +76,13 @@ class GetSyncStatus extends AbstractAction
                 'relationships' => $relationshipStats
             ];
         } catch (\Exception $e) {
+            if ($command instanceof Command) {
+                $command->error('Error getting sync status: ' . $e->getMessage());
+            }
             Log::error('Error getting sync status: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
-
-            throw $e;
+            return [];
         }
     }
 }

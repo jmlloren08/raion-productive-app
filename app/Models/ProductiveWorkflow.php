@@ -20,6 +20,7 @@ class ProductiveWorkflow extends Model
         'type',
         'name',
         'archived_at',
+
         'workflow_status_id'
     ];
 
@@ -37,15 +38,7 @@ class ProductiveWorkflow extends Model
      */
     public function workflowStatus()
     {
-        return $this->belongsTo(ProductiveWorkflowStatus::class, 'workflow_status_id', 'id');
-    }
-
-    /**
-     * Get the projects using this workflow.
-     */
-    public function projects()
-    {
-        return $this->hasMany(ProductiveProject::class, 'workflow_id', 'id');
+        return $this->belongsTo(ProductiveWorkflowStatus::class, 'workflow_status_id');
     }
     
 }

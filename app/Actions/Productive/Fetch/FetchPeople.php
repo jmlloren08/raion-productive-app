@@ -1,19 +1,25 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchTaxRates extends AbstractAction
+class FetchPeople extends AbstractAction
 {
     /**
-     * Define include relationships for tax rates
+     * Define include relationships for people
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'subsidiary'
+        'manager',
+        'company',
+        'subsidiary',
+        'approval_policy_assignment',
+        'teams'
     ];
 
     /**
@@ -22,12 +28,16 @@ class FetchTaxRates extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
+        ['manager'],
+        ['company'],
         ['subsidiary'],
-        []  // Empty array means no includes
+        ['approval_policy_assignment'],
+        ['teams'],
+        [] // Empty array means no includes
     ];
 
     /**
-     * Fetch tax rates from the Productive API
+     * Fetch people from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -40,17 +50,17 @@ class FetchTaxRates extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'tax_rates' => [],
+                'people' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching tax rates...');
+                $command->info('Fetching people from Productive API...');
             }
 
-            $allTaxRates = [];
+            $allPeople = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -58,18 +68,17 @@ class FetchTaxRates extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for tax rates
-                    $response = $apiClient->get("tax_rates", [
+                    // Following Productive API docs for people
+                    $response = $apiClient->get('/people', [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                        'sort' => 'name'
-                    ])->throw();
+                    ]);
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch tax rates: ' . $response->body());
+                        throw new \Exception('Failed to fetch people: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -81,22 +90,22 @@ class FetchTaxRates extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'tax_rates' => [],
+                            'people' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $taxRates = $responseBody['data'];
+                    $people = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $taxRates = $processIncludedAction->handle([
+                    $people = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $taxRates,
+                        'resources' => $people,
                         'command' => $command
                     ]);
 
-                    $allTaxRates = array_merge($allTaxRates, $taxRates);
+                    $allPeople = array_merge($allPeople, $people);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -104,22 +113,22 @@ class FetchTaxRates extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($taxRates) < $pageSize) {
+                    if (count($people) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching tax rates page {$page}...");
+                            $command->info("Fetching people page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($taxRates) . " tax rates from page " . ($page - 1));
+                        $command->info("Fetched " . count($people) . " people from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch tax rates page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch people page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -137,55 +146,55 @@ class FetchTaxRates extends AbstractAction
 
                     return [
                         'success' => false,
-                        'tax_rates' => [],
-                        'error' => 'Error fetching tax rates page ' . $page . ': ' . $e->getMessage()
+                        'people' => [],
+                        'error' => 'Error fetching people page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allTaxRates) . ' tax rates in total');
+                $command->info('Found ' . count($allPeople) . ' people in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allTaxRates);
-                $this->logRelationshipStats($relationshipStats, count($allTaxRates), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allPeople);
+                $this->logRelationshipStats($relationshipStats, count($allPeople), $command);
             }
 
             return [
                 'success' => true,
-                'tax_rates' => $allTaxRates
+                'people' => $allPeople
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in tax rates fetch process: " . $e->getMessage());
+                $command->error("Error in people fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in tax rates fetch process: " . $e->getMessage());
+            Log::error("Error in people fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'tax_rates' => [],
-                'error' => 'Error in tax rates fetch process: ' . $e->getMessage()
+                'people' => [],
+                'error' => 'Error in people fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for tax rates
+     * Calculate relationship statistics for people
      *
-     * @param array $taxRates
+     * @param array $people
      * @return array
      */
-    protected function calculateRelationshipStats(array $taxRates): array
+    protected function calculateRelationshipStats(array $people): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($taxRates as $taxRate) {
-            if (isset($taxRate['relationships'])) {
+        foreach ($people as $person) {
+            if (isset($person['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($taxRate['relationships'][$relationship]['data']['id']) ||
-                        (isset($taxRate['relationships'][$relationship]['data']) && is_array($taxRate['relationships'][$relationship]['data']))
+                        isset($person['relationships'][$relationship]['data']['id']) ||
+                        (isset($person['relationships'][$relationship]['data']) && is_array($person['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -200,16 +209,16 @@ class FetchTaxRates extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalTaxRates
+     * @param int $totalPeople
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalTaxRates, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalPeople, Command $command): void
     {
-        if ($totalTaxRates > 0) {
+        if ($totalPeople > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalTaxRates) * 100, 2);
-                $command->info("Tax rates with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalPeople) * 100, 2);
+                $command->info("People with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

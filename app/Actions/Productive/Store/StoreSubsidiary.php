@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
+use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveContactEntry;
 use App\Models\ProductiveCustomDomain;
@@ -215,7 +216,7 @@ class StoreSubsidiary extends AbstractAction
             'einvoice_download_format_id' => 'nullable|string',
             'peppol_id' => 'nullable|string',
             'export_integration_type_id' => 'nullable|string',
-            'invoice_logo_url' => 'nullable|text',
+            'invoice_logo_url' => 'nullable|string',
 
             'contact_entry_id' => 'nullable|string',
             'custom_domain_id' => 'nullable|string',

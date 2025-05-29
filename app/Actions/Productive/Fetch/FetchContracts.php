@@ -1,22 +1,21 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchProjects extends AbstractAction
+class FetchContracts extends AbstractAction
 {
     /**
-     * Define include relationships for projects
+     * Define include relationships for contracts
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'company',
-        'project_manager',
-        'last_actor',
-        'workflow'
+        'template',
     ];
 
     /**
@@ -25,15 +24,12 @@ class FetchProjects extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['company'],
-        ['project_manager'],
-        ['last_actor'],
-        ['workflow'],
+        ['template'],  // Fallback to template only
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch projects from the Productive API
+     * Fetch contracts from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -46,17 +42,17 @@ class FetchProjects extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'projects' => [],
+                'contracts' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching projects...');
+                $command->info('Fetching contracts...');
             }
 
-            $allProjects = [];
+            $allContracts = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -64,18 +60,16 @@ class FetchProjects extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for projects
-                    $response = $apiClient->get("projects", [
+                    $response = $apiClient->get("contracts", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                        'sort' => 'name'
                     ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch projects: ' . $response->body());
+                        throw new \Exception('Failed to fetch contracts: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -87,22 +81,22 @@ class FetchProjects extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'projects' => [],
+                            'contracts' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $projects = $responseBody['data'];
+                    $contracts = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $projects = $processIncludedAction->handle([
+                    $contracts = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $projects,
+                        'resources' => $contracts,
                         'command' => $command
                     ]);
 
-                    $allProjects = array_merge($allProjects, $projects);
+                    $allContracts = array_merge($allContracts, $contracts);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -110,22 +104,22 @@ class FetchProjects extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($projects) < $pageSize) {
+                    if (count($contracts) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching projects page {$page}...");
+                            $command->info("Fetching contracts page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($projects) . " projects from page " . ($page - 1));
+                        $command->info("Fetched " . count($contracts) . " contracts from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch projects page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch contracts page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -143,55 +137,55 @@ class FetchProjects extends AbstractAction
 
                     return [
                         'success' => false,
-                        'projects' => [],
-                        'error' => 'Error fetching projects page ' . $page . ': ' . $e->getMessage()
+                        'contracts' => [],
+                        'error' => 'Error fetching contracts page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allProjects) . ' projects in total');
+                $command->info('Found ' . count($allContracts) . ' contracts in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allProjects);
-                $this->logRelationshipStats($relationshipStats, count($allProjects), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allContracts);
+                $this->logRelationshipStats($relationshipStats, count($allContracts), $command);
             }
 
             return [
                 'success' => true,
-                'projects' => $allProjects
+                'contracts' => $allContracts
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in projects fetch process: " . $e->getMessage());
+                $command->error("Error in contracts fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in projects fetch process: " . $e->getMessage());
+            Log::error("Error in contracts fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'projects' => [],
-                'error' => 'Error in projects fetch process: ' . $e->getMessage()
+                'contracts' => [],
+                'error' => 'Error in contracts fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for projects
+     * Calculate relationship statistics for contracts
      *
-     * @param array $projects
+     * @param array $contracts
      * @return array
      */
-    protected function calculateRelationshipStats(array $projects): array
+    protected function calculateRelationshipStats(array $contracts): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($projects as $project) {
-            if (isset($project['relationships'])) {
+        foreach ($contracts as $contract) {
+            if (isset($contract['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($project['relationships'][$relationship]['data']['id']) ||
-                        (isset($project['relationships'][$relationship]['data']) && is_array($project['relationships'][$relationship]['data']))
+                        isset($contract['relationships'][$relationship]['data']['id']) ||
+                        (isset($contract['relationships'][$relationship]['data']) && is_array($contract['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -206,16 +200,16 @@ class FetchProjects extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalProjects
+     * @param int $totalContracts
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalProjects, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalContracts, Command $command): void
     {
-        if ($totalProjects > 0) {
+        if ($totalContracts > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalProjects) * 100, 2);
-                $command->info("Projects with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalContracts) * 100, 2);
+                $command->info("Contracts with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }
@@ -237,4 +231,4 @@ class FetchProjects extends AbstractAction
         }
         $command->info("Page {$page} included data: " . json_encode($includedTypes));
     }
-}
+} 

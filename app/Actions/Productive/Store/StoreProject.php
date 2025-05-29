@@ -1,18 +1,21 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
+use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveCompany;
-use App\Models\ProductiveTaxRate;
+use App\Models\ProductiveProject;
+use App\Models\ProductivePeople;
+use App\Models\ProductiveWorkflow;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class StoreCompany extends AbstractAction
+class StoreProject extends AbstractAction
 {
     /**
-     * Required fields that must be present in the company data
+     * Required fields that must be present in the project data
      */
     protected array $requiredFields = [
         'name',
@@ -22,12 +25,14 @@ class StoreCompany extends AbstractAction
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
-        'default_subsidiary_id' => ProductiveCompany::class,
-        'default_tax_rate_id' => ProductiveTaxRate::class,
+        'company_id' => ProductiveCompany::class,
+        'project_manager_id' => ProductivePeople::class,
+        'last_actor_id' => ProductivePeople::class,
+        'workflow_id' => ProductiveWorkflow::class
     ];
 
     /**
-     * Store a company in the database
+     * Store a project in the database
      *
      * @param array $parameters
      * @return bool
@@ -35,38 +40,43 @@ class StoreCompany extends AbstractAction
      */
     public function handle(array $parameters = []): bool
     {
-        $companyData = $parameters['companyData'] ?? null;
+        $projectData = $parameters['projectData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        if (!$companyData) {
-            throw new \Exception('Company data is required');
+        if (!$projectData) {
+            throw new \Exception('Project data is required');
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info("Processing company: {$companyData['id']}");
+                $command->info("Processing project: {$projectData['id']}");
             }
 
             // Validate basic data structure
-            if (!isset($companyData['id'])) {
+            if (!isset($projectData['id'])) {
                 throw new \Exception("Missing required field 'id' in root data object");
             }
 
-            $attributes = $companyData['attributes'] ?? [];
-            $relationships = $companyData['relationships'] ?? [];
+            $attributes = $projectData['attributes'] ?? [];
+            $relationships = $projectData['relationships'] ?? [];
+
+            // Debug log relationships
+            // if ($command instanceof Command) {
+            //     $command->info("Project relationships: " . json_encode($relationships));
+            // }
 
             // Add type from root level if not in attributes
-            if (!isset($attributes['type']) && isset($companyData['type'])) {
-                $attributes['type'] = $companyData['type'];
+            if (!isset($attributes['type']) && isset($projectData['type'])) {
+                $attributes['type'] = $projectData['type'];
             }
 
             // Validate required fields
-            $this->validateRequiredFields($attributes, $companyData['id'], $command);
+            $this->validateRequiredFields($attributes, $projectData['id'], $command);
 
             // Prepare base data
             $data = [
-                'id' => $companyData['id'],
-                'type' => $attributes['type'] ?? $companyData['type'] ?? 'companies',
+                'id' => $projectData['id'],
+                'type' => $attributes['type'] ?? $projectData['type'] ?? 'projects',
             ];
 
             // Add all attributes with safe fallbacks
@@ -78,27 +88,33 @@ class StoreCompany extends AbstractAction
             $this->handleJsonFields($data);
 
             // Handle foreign key relationships
-            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Company', $command);
+            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Project', $command);
+
+            // Debug log final data
+            // if ($command instanceof Command) {
+            //     $command->info("Final project data: " . json_encode($data));
+            // }
 
             // Validate data types
             $this->validateDataTypes($data);
 
-            // Create or update company
-            ProductiveCompany::updateOrCreate(
-                ['id' => $companyData['id']],
+            // Create or update project
+            ProductiveProject::updateOrCreate(
+                ['id' => $projectData['id']],
                 $data
             );
 
             if ($command instanceof Command) {
-                $command->info("Successfully stored company: {$attributes['name']} (ID: {$companyData['id']})");
+                $command->info("Successfully stored project: {$attributes['name']} (ID: {$projectData['id']})");
             }
 
             return true;
+
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Failed to store company {$companyData['id']}: " . $e->getMessage());
+                $command->error("Failed to store project {$projectData['id']}: " . $e->getMessage());
             }
-            Log::error("Failed to store company {$companyData['id']}: " . $e->getMessage());
+            Log::error("Failed to store project {$projectData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -107,11 +123,11 @@ class StoreCompany extends AbstractAction
      * Validate that all required fields are present
      *
      * @param array $attributes
-     * @param string $companyId
+     * @param string $projectId
      * @param Command|null $command
      * @throws \Exception
      */
-    protected function validateRequiredFields(array $attributes, string $companyId, ?Command $command): void
+    protected function validateRequiredFields(array $attributes, string $projectId, ?Command $command): void
     {
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
@@ -121,7 +137,7 @@ class StoreCompany extends AbstractAction
         }
 
         if (!empty($missingFields)) {
-            $message = "Required fields missing for company {$companyId}: " . implode(', ', $missingFields);
+            $message = "Required fields missing for project {$projectId}: " . implode(', ', $missingFields);
             if ($command) {
                 $command->error($message);
             }
@@ -137,13 +153,11 @@ class StoreCompany extends AbstractAction
     protected function handleJsonFields(array &$data): void
     {
         $jsonFields = [
-            'invoice_email_recipients',
+            'preferences',
+            'tag_colors',
             'custom_fields',
-            'tag_list',
-            'contact',
-            'settings',
-            'custom_field_people',
-            'custom_field_attachments'
+            'task_custom_fields_ids',
+            'task_custom_fields_positions',
         ];
 
         foreach ($jsonFields as $field) {
@@ -160,15 +174,17 @@ class StoreCompany extends AbstractAction
      *
      * @param array $relationships
      * @param array &$data
-     * @param string $companyName
+     * @param string $projectName
      * @param Command|null $command
      */
-    protected function handleForeignKeys(array $relationships, array &$data, string $companyName, ?Command $command): void
+    protected function handleForeignKeys(array $relationships, array &$data, string $projectName, ?Command $command): void
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'default_subsidiary' => 'default_subsidiary_id',
-            'default_tax_rate' => 'default_tax_rate_id',
+            'company' => 'company_id',
+            'project_manager' => 'project_manager_id',
+            'last_actor' => 'last_actor_id',
+            'workflow' => 'workflow_id'
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -183,7 +199,7 @@ class StoreCompany extends AbstractAction
 
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Company '{$companyName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Project '{$projectName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
                     $data[$dbKey] = null;
                 } else {
@@ -210,34 +226,23 @@ class StoreCompany extends AbstractAction
     {
         $rules = [
             'name' => 'required|string',
-            'billing_name' => 'nullable|string',
-            'vat' => 'nullable|string',
-            'default_currency' => 'nullable|string',
-            'created_at_api' => 'nullable|date',
-            'last_activity_at' => 'nullable|date',
-            'archived_at' => 'nullable|date',
-            'avatar_url' => 'nullable|string',
-            'invoice_email_recipients' => 'nullable|json',
-            'custom_fields' => 'nullable|json',
-            'company_code' => 'nullable|string',
-            'domain' => 'nullable|string',
-            'projectless_budgets' => 'boolean',
-            'leitweg_id' => 'nullable|string',
-            'buyer_reference' => 'nullable|string',
-            'peppol_id' => 'nullable|string',
-            'default_subsidiary_id' => 'nullable|string',
-            'default_tax_rate_id' => 'nullable|string',
-            'default_document_type_id' => 'nullable|string',
-            'description' => 'nullable|string',
-            'due_days' => 'nullable|integer',
-            'tag_list' => 'nullable|json',
-            'contact' => 'nullable|json',
+            'number' => 'required|string',
+            'project_number' => 'required|string',
+            'project_type_id' => 'required|integer',
+            'project_color_id' => 'required|integer',
+            'public_access' => 'boolean',
+            'time_on_tasks' => 'boolean',
+            'template' => 'boolean',
             'sample_data' => 'boolean',
-            'settings' => 'nullable|json',
-            'external_id' => 'nullable|string',
-            'external_sync' => 'boolean',
-            'custom_field_people' => 'nullable|json',
-            'custom_field_attachments' => 'nullable|json'
+            'preferences' => 'nullable|json',
+            'tag_colors' => 'nullable|json',
+            'custom_fields' => 'nullable|json',
+            'task_custom_fields_ids' => 'nullable|json',
+            'task_custom_fields_positions' => 'nullable|json',
+            'company_id' => 'nullable|string',
+            'project_manager_id' => 'nullable|string',
+            'last_actor_id' => 'nullable|string',
+            'workflow_id' => 'nullable|string'
         ];
 
         $validator = Validator::make($data, $rules);

@@ -1,22 +1,21 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchContactEntries extends AbstractAction
+class FetchWorkflows extends AbstractAction
 {
     /**
-     * Define include relationships for contact entries
+     * Define include relationships for workflows
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'company',
-        'person',
-        'subsidiary',   
-        'purchase_order',
+        'workflow_statuses'
     ];
 
     /**
@@ -25,15 +24,12 @@ class FetchContactEntries extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['company'],
-        ['person'],
-        ['subsidiary'],
-        ['purchase_order'],
-        []  // Empty array means no includes
+        ['workflow_statuses'],
+        [] // Empty array means no includes
     ];
 
     /**
-     * Fetch contact entries from the Productive API
+     * Fetch workflows from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -46,17 +42,17 @@ class FetchContactEntries extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'contact_entries' => [],
+                'workflows' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching contact entries...');
+                $command->info('Fetching workflows from Productive API...');
             }
 
-            $allContactEntries = [];
+            $allWorkflows = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -64,16 +60,17 @@ class FetchContactEntries extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    $response = $apiClient->get("contact_entries", [
+                    $response = $apiClient->get('/workflows', [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                    ])->throw();
+                        'sort' => 'name'
+                    ]);
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch contact entries: ' . $response->body());
+                        throw new \Exception('Failed to fetch workflows: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -85,22 +82,22 @@ class FetchContactEntries extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'contact_entries' => [],
+                            'workflows' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $contactEntries = $responseBody['data'];
+                    $workflows = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $contactEntries = $processIncludedAction->handle([
+                    $workflows = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $contactEntries,
+                        'resources' => $workflows,
                         'command' => $command
                     ]);
 
-                    $allContactEntries = array_merge($allContactEntries, $contactEntries);
+                    $allWorkflows = array_merge($allWorkflows, $workflows);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -108,22 +105,22 @@ class FetchContactEntries extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($contactEntries) < $pageSize) {
+                    if (count($workflows) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching contact entries page {$page}...");
+                            $command->info("Fetching workflows page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($contactEntries) . " contact entries from page " . ($page - 1));
+                        $command->info("Fetched " . count($workflows) . " workflows from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch contact entries page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch workflows page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -141,55 +138,55 @@ class FetchContactEntries extends AbstractAction
 
                     return [
                         'success' => false,
-                        'contact_entries' => [],
-                        'error' => 'Error fetching contact entries page ' . $page . ': ' . $e->getMessage()
+                        'workflows' => [],
+                        'error' => 'Error fetching workflows page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allContactEntries) . ' contact entries in total');
+                $command->info('Found ' . count($allWorkflows) . ' workflows in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allContactEntries);
-                $this->logRelationshipStats($relationshipStats, count($allContactEntries), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allWorkflows);
+                $this->logRelationshipStats($relationshipStats, count($allWorkflows), $command);
             }
 
             return [
                 'success' => true,
-                'contact_entries' => $allContactEntries
+                'workflows' => $allWorkflows
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in contact entries fetch process: " . $e->getMessage());
+                $command->error("Error in workflows fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in contact entries fetch process: " . $e->getMessage());
+            Log::error("Error in workflows fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'contact_entries' => [],
-                'error' => 'Error in contact entries fetch process: ' . $e->getMessage()
+                'workflows' => [],
+                'error' => 'Error in workflows fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for contact entries
+     * Calculate relationship statistics for workflows
      *
-     * @param array $contactEntries
+     * @param array $workflows
      * @return array
      */
-    protected function calculateRelationshipStats(array $contactEntries): array
+    protected function calculateRelationshipStats(array $workflows): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($contactEntries as $contactEntry) {
-            if (isset($contactEntry['relationships'])) {
+        foreach ($workflows as $workflow) {
+            if (isset($workflow['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($contactEntry['relationships'][$relationship]['data']['id']) ||
-                        (isset($contactEntry['relationships'][$relationship]['data']) && is_array($contactEntry['relationships'][$relationship]['data']))
+                        isset($workflow['relationships'][$relationship]['data']['id']) ||
+                        (isset($workflow['relationships'][$relationship]['data']) && is_array($workflow['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -204,16 +201,16 @@ class FetchContactEntries extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalContactEntries
+     * @param int $totalWorkflows
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalContactEntries, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalWorkflows, Command $command): void
     {
-        if ($totalContactEntries > 0) {
+        if ($totalWorkflows > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalContactEntries) * 100, 2);
-                $command->info("Contact entries with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalWorkflows) * 100, 2);
+                $command->info("Workflows with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

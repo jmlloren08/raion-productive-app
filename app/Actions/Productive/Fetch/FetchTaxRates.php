@@ -1,22 +1,21 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchSubsidiaries extends AbstractAction
+class FetchTaxRates extends AbstractAction
 {
     /**
-     * Define include relationships for subsidiaries
+     * Define include relationships for tax rates
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'bill_from',
-        'custom_domain',
-        'default_tax_rate',
-        'integration'
+        'subsidiary'
     ];
 
     /**
@@ -25,15 +24,12 @@ class FetchSubsidiaries extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['bill_from'],
-        ['custom_domain'],
-        ['default_tax_rate'],
-        ['integration'],
+        ['subsidiary'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch subsidiaries from the Productive API
+     * Fetch tax rates from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -46,17 +42,17 @@ class FetchSubsidiaries extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'subsidiaries' => [],
+                'tax_rates' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching subsidiaries...');
+                $command->info('Fetching tax rates...');
             }
 
-            $allSubsidiaries = [];
+            $allTaxRates = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -64,8 +60,8 @@ class FetchSubsidiaries extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for subsidiaries
-                    $response = $apiClient->get("subsidiaries", [
+                    // Following Productive API docs for tax rates
+                    $response = $apiClient->get("tax_rates", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
@@ -75,11 +71,11 @@ class FetchSubsidiaries extends AbstractAction
                     ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch subsidiaries: ' . $response->body());
+                        throw new \Exception('Failed to fetch tax rates: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
-                    
+
                     if (!isset($responseBody['data']) || !is_array($responseBody['data'])) {
                         if ($command instanceof Command) {
                             $command->error("Invalid API response format on page {$page}. Missing 'data' array.");
@@ -87,22 +83,22 @@ class FetchSubsidiaries extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'subsidiaries' => [],
+                            'tax_rates' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $subsidiaries = $responseBody['data'];
-                    
+                    $taxRates = $responseBody['data'];
+
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $subsidiaries = $processIncludedAction->handle([
+                    $taxRates = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $subsidiaries,
+                        'resources' => $taxRates,
                         'command' => $command
                     ]);
 
-                    $allSubsidiaries = array_merge($allSubsidiaries, $subsidiaries);
+                    $allTaxRates = array_merge($allTaxRates, $taxRates);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -110,22 +106,22 @@ class FetchSubsidiaries extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($subsidiaries) < $pageSize) {
+                    if (count($taxRates) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching subsidiaries page {$page}...");
+                            $command->info("Fetching tax rates page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($subsidiaries) . " subsidiaries from page " . ($page - 1));
+                        $command->info("Fetched " . count($taxRates) . " tax rates from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch subsidiaries page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch tax rates page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -143,55 +139,55 @@ class FetchSubsidiaries extends AbstractAction
 
                     return [
                         'success' => false,
-                        'subsidiaries' => [],
-                        'error' => 'Error fetching subsidiaries page ' . $page . ': ' . $e->getMessage()
+                        'tax_rates' => [],
+                        'error' => 'Error fetching tax rates page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allSubsidiaries) . ' subsidiaries in total');
+                $command->info('Found ' . count($allTaxRates) . ' tax rates in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allSubsidiaries);
-                $this->logRelationshipStats($relationshipStats, count($allSubsidiaries), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allTaxRates);
+                $this->logRelationshipStats($relationshipStats, count($allTaxRates), $command);
             }
 
             return [
                 'success' => true,
-                'subsidiaries' => $allSubsidiaries
+                'tax_rates' => $allTaxRates
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in subsidiaries fetch process: " . $e->getMessage());
+                $command->error("Error in tax rates fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in subsidiaries fetch process: " . $e->getMessage());
+            Log::error("Error in tax rates fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'subsidiaries' => [],
-                'error' => 'Error in subsidiaries fetch process: ' . $e->getMessage()
+                'tax_rates' => [],
+                'error' => 'Error in tax rates fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for subsidiaries
+     * Calculate relationship statistics for tax rates
      *
-     * @param array $subsidiaries
+     * @param array $taxRates
      * @return array
      */
-    protected function calculateRelationshipStats(array $subsidiaries): array
+    protected function calculateRelationshipStats(array $taxRates): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($subsidiaries as $subsidiary) {
-            if (isset($subsidiary['relationships'])) {
+        foreach ($taxRates as $taxRate) {
+            if (isset($taxRate['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($subsidiary['relationships'][$relationship]['data']['id']) ||
-                        (isset($subsidiary['relationships'][$relationship]['data']) && is_array($subsidiary['relationships'][$relationship]['data']))
+                        isset($taxRate['relationships'][$relationship]['data']['id']) ||
+                        (isset($taxRate['relationships'][$relationship]['data']) && is_array($taxRate['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -206,16 +202,16 @@ class FetchSubsidiaries extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalSubsidiaries
+     * @param int $totalTaxRates
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalSubsidiaries, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalTaxRates, Command $command): void
     {
-        if ($totalSubsidiaries > 0) {
+        if ($totalTaxRates > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalSubsidiaries) * 100, 2);
-                $command->info("Subsidiaries with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalTaxRates) * 100, 2);
+                $command->info("Tax rates with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

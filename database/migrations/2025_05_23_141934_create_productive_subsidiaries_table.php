@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('einvoice_download_format_id')->nullable();
             $table->string('peppol_id')->nullable();
             $table->string('export_integration_type_id')->nullable();
-            $table->text('invoice_logo_url')->nullable();  // Allow NULL values since they can come from the API
+            $table->string('invoice_logo_url')->nullable();
             // Relationships
             $table->string('contact_entry_id')->nullable();
             $table->string('custom_domain_id')->nullable();

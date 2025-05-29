@@ -3,20 +3,25 @@
 namespace App\Console\Commands;
 
 use App\Actions\Productive\InitializeClient;
-use App\Actions\Productive\FetchCompanies;
-use App\Actions\Productive\FetchProjects;
-use App\Actions\Productive\FetchPeople;
-use App\Actions\Productive\FetchWorkflows;
-use App\Actions\Productive\FetchDeals;
-use App\Actions\Productive\FetchDocumentTypes;
-use App\Actions\Productive\FetchContactEntries;
-use App\Actions\Productive\FetchSubsidiaries;
-use App\Actions\Productive\FetchTaxRates;
-use App\Actions\Productive\FetchDocumentStyles;
+use App\Actions\Productive\Fetch\FetchCompanies;
+use App\Actions\Productive\Fetch\FetchContactEntries;
+use App\Actions\Productive\Fetch\FetchContracts;
+use App\Actions\Productive\Fetch\FetchDeals;
+use App\Actions\Productive\Fetch\FetchDealStatus;
+use App\Actions\Productive\Fetch\FetchDocumentStyles;
+use App\Actions\Productive\Fetch\FetchDocumentTypes;
+use App\Actions\Productive\Fetch\FetchLostReasons;
+use App\Actions\Productive\Fetch\FetchPeople;
+use App\Actions\Productive\Fetch\FetchProjects;
+use App\Actions\Productive\Fetch\FetchSubsidiaries;
+use App\Actions\Productive\Fetch\FetchTaxRates;
+use App\Actions\Productive\Fetch\FetchWorkflows;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
+use App\Models\ProductiveContactEntry;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class SyncProductiveDataRefactored extends Command
 {
@@ -32,7 +37,10 @@ class SyncProductiveDataRefactored extends Command
         'contact_entries' => [],
         'subsidiaries' => [],
         'tax_rates' => [],
-        'document_styles' => []
+        'document_styles' => [],
+        'deal_statuses' => [],
+        'lost_reasons' => [],
+        'contracts' => []
     ];
 
     public function __construct(
@@ -47,6 +55,9 @@ class SyncProductiveDataRefactored extends Command
         private FetchSubsidiaries $fetchSubsidiariesAction,
         private FetchTaxRates $fetchTaxRatesAction,
         private FetchDocumentStyles $fetchDocumentStylesAction,
+        private FetchDealStatus $fetchDealStatusAction,
+        private FetchLostReasons $fetchLostReasonsAction,
+        private FetchContracts $fetchContractsAction,
         private StoreData $storeDataAction,
         private ValidateDataIntegrity $validateDataIntegrityAction
     ) {
@@ -107,6 +118,32 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['document_styles'] = $documentStyles['document_styles'];
 
+            // Fetch deal statuses
+            $dealStatuses = $this->fetchDealStatusAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$dealStatuses['success']) {
+                $this->error('Failed to fetch deal statuses: ' . ($dealStatuses['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['deal_statuses'] = $dealStatuses['deal_statuses'];
+
+            // Fetch lost reasons
+            $lostReasons = $this->fetchLostReasonsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$lostReasons['success']) {
+                $this->error('Failed to fetch lost reasons: ' . ($lostReasons['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['lost_reasons'] = $lostReasons['lost_reasons'];
+
             // Fetch companies
             $companies = $this->fetchCompaniesAction->handle([
                 'apiClient' => $apiClient,
@@ -159,19 +196,6 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['projects'] = $projects['projects'];
 
-            // Fetch deals
-            $deals = $this->fetchDealsAction->handle([
-                'apiClient' => $apiClient,
-                'command' => $this
-            ]);
-
-            if (!$deals['success']) {
-                $this->error('Failed to fetch deals: ' . ($deals['error'] ?? 'Unknown error'));
-                return 1;
-            }
-
-            $this->data['deals'] = $deals['deals'];
-
             // Fetch document types
             $documentTypes = $this->fetchDocumentTypesAction->handle([
                 'apiClient' => $apiClient,
@@ -198,6 +222,32 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['contact_entries'] = $contactEntries['contact_entries'];
 
+            // Fetch deals
+            $deals = $this->fetchDealsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$deals['success']) {
+                $this->error('Failed to fetch deals: ' . ($deals['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['deals'] = $deals['deals'];
+
+            // Fetch contracts
+            $contracts = $this->fetchContractsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$contracts['success']) {
+                $this->error('Failed to fetch contracts: ' . ($contracts['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['contracts'] = $contracts['contracts'];
+
             // Store data in MySQL
             $this->info('Storing data in database...');
             $storageSuccess = $this->storeDataAction->handle([
@@ -223,6 +273,7 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Subsidiaries synced: ' . count($this->data['subsidiaries']));
             $this->info('Tax Rates synced: ' . count($this->data['tax_rates']));
             $this->info('Document Styles synced: ' . count($this->data['document_styles']));
+            $this->info('Lost Reasons synced: ' . count($this->data['lost_reasons']));
             $this->info('Companies synced: ' . count($this->data['companies']));
             $this->info('People synced: ' . count($this->data['people']));
             $this->info('Workflows synced: ' . count($this->data['workflows']));
@@ -230,6 +281,8 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Document Types synced: ' . count($this->data['document_types']));
             $this->info('Contact Entries synced: ' . count($this->data['contact_entries']));
             $this->info('Projects synced: ' . count($this->data['projects']));
+            $this->info('Deal Statuses synced: ' . count($this->data['deal_statuses']));
+            $this->info('Contracts synced: ' . count($this->data['contracts']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 
@@ -237,6 +290,10 @@ class SyncProductiveDataRefactored extends Command
         } catch (\Exception $e) {
             $this->error('Sync failed: ' . $e->getMessage());
             $this->error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Productive sync error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             return 1;
         }
     }

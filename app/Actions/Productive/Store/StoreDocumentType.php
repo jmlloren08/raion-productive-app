@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
+use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveDocumentType;
 use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveDocumentStyle;

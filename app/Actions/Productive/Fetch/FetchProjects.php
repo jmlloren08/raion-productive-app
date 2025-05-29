@@ -1,23 +1,24 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchPeople extends AbstractAction
+class FetchProjects extends AbstractAction
 {
     /**
-     * Define include relationships for people
+     * Define include relationships for projects
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'manager',
         'company',
-        'subsidiary',
-        'approval_policy_assignment',
-        'teams'
+        'project_manager',
+        'last_actor',
+        'workflow'
     ];
 
     /**
@@ -26,16 +27,15 @@ class FetchPeople extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['manager'],
         ['company'],
-        ['subsidiary'],
-        ['approval_policy_assignment'],
-        ['teams'],
-        [] // Empty array means no includes
+        ['project_manager'],
+        ['last_actor'],
+        ['workflow'],
+        []  // Empty array means no includes
     ];
 
     /**
-     * Fetch people from the Productive API
+     * Fetch projects from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -48,17 +48,17 @@ class FetchPeople extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'people' => [],
+                'projects' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching people from Productive API...');
+                $command->info('Fetching projects...');
             }
 
-            $allPeople = [];
+            $allProjects = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -66,17 +66,18 @@ class FetchPeople extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for people
-                    $response = $apiClient->get('/people', [
+                    // Following Productive API docs for projects
+                    $response = $apiClient->get("projects", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                    ]);
+                        'sort' => 'name'
+                    ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch people: ' . $response->body());
+                        throw new \Exception('Failed to fetch projects: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -88,22 +89,22 @@ class FetchPeople extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'people' => [],
+                            'projects' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $people = $responseBody['data'];
+                    $projects = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $people = $processIncludedAction->handle([
+                    $projects = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $people,
+                        'resources' => $projects,
                         'command' => $command
                     ]);
 
-                    $allPeople = array_merge($allPeople, $people);
+                    $allProjects = array_merge($allProjects, $projects);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -111,22 +112,22 @@ class FetchPeople extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($people) < $pageSize) {
+                    if (count($projects) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching people page {$page}...");
+                            $command->info("Fetching projects page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($people) . " people from page " . ($page - 1));
+                        $command->info("Fetched " . count($projects) . " projects from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch people page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch projects page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -144,55 +145,55 @@ class FetchPeople extends AbstractAction
 
                     return [
                         'success' => false,
-                        'people' => [],
-                        'error' => 'Error fetching people page ' . $page . ': ' . $e->getMessage()
+                        'projects' => [],
+                        'error' => 'Error fetching projects page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allPeople) . ' people in total');
+                $command->info('Found ' . count($allProjects) . ' projects in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allPeople);
-                $this->logRelationshipStats($relationshipStats, count($allPeople), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allProjects);
+                $this->logRelationshipStats($relationshipStats, count($allProjects), $command);
             }
 
             return [
                 'success' => true,
-                'people' => $allPeople
+                'projects' => $allProjects
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in people fetch process: " . $e->getMessage());
+                $command->error("Error in projects fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in people fetch process: " . $e->getMessage());
+            Log::error("Error in projects fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'people' => [],
-                'error' => 'Error in people fetch process: ' . $e->getMessage()
+                'projects' => [],
+                'error' => 'Error in projects fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for people
+     * Calculate relationship statistics for projects
      *
-     * @param array $people
+     * @param array $projects
      * @return array
      */
-    protected function calculateRelationshipStats(array $people): array
+    protected function calculateRelationshipStats(array $projects): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($people as $person) {
-            if (isset($person['relationships'])) {
+        foreach ($projects as $project) {
+            if (isset($project['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($person['relationships'][$relationship]['data']['id']) ||
-                        (isset($person['relationships'][$relationship]['data']) && is_array($person['relationships'][$relationship]['data']))
+                        isset($project['relationships'][$relationship]['data']['id']) ||
+                        (isset($project['relationships'][$relationship]['data']) && is_array($project['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -207,16 +208,16 @@ class FetchPeople extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalPeople
+     * @param int $totalProjects
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalPeople, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalProjects, Command $command): void
     {
-        if ($totalPeople > 0) {
+        if ($totalProjects > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalPeople) * 100, 2);
-                $command->info("People with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalProjects) * 100, 2);
+                $command->info("Projects with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

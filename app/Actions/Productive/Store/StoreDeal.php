@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
+use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveDeal;
 use App\Models\ProductiveDocumentType;
 use App\Models\ProductiveDealStatus;
@@ -15,6 +16,7 @@ use App\Models\ProductiveApa;
 use App\Models\ProductiveCompany;
 use App\Models\ProductivePeople;
 use App\Models\ProductiveProject;
+use App\Models\ProductiveTemplate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -45,8 +47,7 @@ class StoreDeal extends AbstractAction
         'contact_id' => ProductiveContactEntry::class,
         'subsidiary_id' => ProductiveSubsidiary::class,
         'tax_rate_id' => ProductiveTaxRate::class,
-        'pipeline_id' => ProductivePipeline::class,
-        'apa_id' => ProductiveApa::class
+        'apa_id' => ProductiveApa::class,
     ];
 
     /**
@@ -114,7 +115,6 @@ class StoreDeal extends AbstractAction
 
             if ($command instanceof Command) {
                 $command->info("Successfully stored deal: {$attributes['name']} (ID: {$dealData['id']})");
-                $this->logRelationshipStatus(ProductiveDeal::find($dealData['id']), $command);
             }
 
             return true;
@@ -235,33 +235,6 @@ class StoreDeal extends AbstractAction
                     $command->info("No relationship data found for {$apiKey}");
                 }
             }
-        }
-    }
-
-    /**
-     * Log the status of relationships for a deal
-     */
-    protected function logRelationshipStatus(ProductiveDeal $deal, Command $command): void
-    {
-        $relationships = [
-            'company' => $deal->company_id,
-            'project' => $deal->project_id,
-            'creator' => $deal->creator_id,
-            'responsible' => $deal->responsible_id,
-            'deal status' => $deal->deal_status_id,
-            'pipeline' => $deal->pipeline_id,
-            'document type' => $deal->document_type_id,
-            'lost reason' => $deal->lost_reason_id,
-            'contract' => $deal->contract_id,
-            'contact' => $deal->contact_id,
-            'subsidiary' => $deal->subsidiary_id,
-            'tax rate' => $deal->tax_rate_id,
-            'apa' => $deal->apa_id
-        ];
-
-        foreach ($relationships as $name => $id) {
-            $status = $id ? 'linked' : 'not linked';
-            $command->info("Deal is {$status} to {$name}" . ($id ? " (ID: {$id})" : ''));
         }
     }
 

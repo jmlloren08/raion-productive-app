@@ -2,6 +2,19 @@
 
 namespace App\Actions\Productive;
 
+use App\Actions\Productive\Store\StoreCompany;
+use App\Actions\Productive\Store\StoreContactEntry;
+use App\Actions\Productive\Store\StoreContract;
+use App\Actions\Productive\Store\StoreDeal;
+use App\Actions\Productive\Store\StoreDealStatus;
+use App\Actions\Productive\Store\StoreDocumentStyle;
+use App\Actions\Productive\Store\StoreDocumentType;
+use App\Actions\Productive\Store\StoreLostReason;
+use App\Actions\Productive\Store\StorePeople;
+use App\Actions\Productive\Store\StoreProject;
+use App\Actions\Productive\Store\StoreSubsidiary;
+use App\Actions\Productive\Store\StoreTaxRate;
+use App\Actions\Productive\Store\StoreWorkflow;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +30,10 @@ class StoreData extends AbstractAction
         private StoreContactEntry $storeContactEntryAction,
         private StoreSubsidiary $storeSubsidiaryAction,
         private StoreTaxRate $storeTaxRateAction,
-        private StoreDocumentStyle $storeDocumentStyleAction
+        private StoreDocumentStyle $storeDocumentStyleAction,
+        private StoreDealStatus $storeDealStatusAction,
+        private StoreLostReason $storeLostReasonAction,
+        private StoreContract $storeContractAction
     ) {}
 
     /**
@@ -40,7 +56,9 @@ class StoreData extends AbstractAction
                 empty($data['people']) && empty($data['workflows']) &&
                 empty($data['deals']) && empty($data['document_types']) &&
                 empty($data['contact_entries']) && empty($data['subsidiaries']) &&
-                empty($data['tax_rates']) && empty($data['document_styles'])
+                empty($data['tax_rates']) && empty($data['document_styles']) &&
+                empty($data['deal_statuses']) && empty($data['lost_reasons']) &&
+                empty($data['contracts'])
             ) {
                 if ($command instanceof Command) {
                     $command->warn('No data fetched from Productive API. Skipping storage.');
@@ -129,6 +147,62 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Document Styles: {$documentStylesSuccess} stored successfully, {$documentStylesError} failed");
+                }
+            }
+
+            // Store deal statuses
+            if (!empty($data['deal_statuses'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing deal statuses...');
+                }
+
+                $dealStatusesSuccess = 0;
+                $dealStatusesError = 0;
+                foreach ($data['deal_statuses'] as $dealStatusData) {
+                    try {
+                        $this->storeDealStatusAction->handle([
+                            'dealStatusData' => $dealStatusData,
+                            'command' => $command
+                        ]);
+                        $dealStatusesSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store deal status (ID: {$dealStatusData['id']}): " . $e->getMessage());
+                        }
+                        $dealStatusesError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Deal Statuses: {$dealStatusesSuccess} stored successfully, {$dealStatusesError} failed");
+                }
+            }
+
+            // Store lost reasons
+            if (!empty($data['lost_reasons'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing lost reasons...');
+                }
+
+                $lostReasonsSuccess = 0;
+                $lostReasonsError = 0;
+                foreach ($data['lost_reasons'] as $lostReasonData) {
+                    try {
+                        $this->storeLostReasonAction->handle([
+                            'lostReasonData' => $lostReasonData,
+                            'command' => $command
+                        ]);
+                        $lostReasonsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store lost reason (ID: {$lostReasonData['id']}): " . $e->getMessage());
+                        }
+                        $lostReasonsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Lost Reasons: {$lostReasonsSuccess} stored successfully, {$lostReasonsError} failed");
                 }
             }
 
@@ -244,34 +318,6 @@ class StoreData extends AbstractAction
                 }
             }
 
-            // Store deals
-            if (!empty($data['deals'])) {
-                if ($command instanceof Command) {
-                    $command->info('Storing deals...');
-                }
-
-                $dealsSuccess = 0;
-                $dealsError = 0;
-                foreach ($data['deals'] as $dealData) {
-                    try {
-                        $this->storeDealAction->handle([
-                            'dealData' => $dealData,
-                            'command' => $command
-                        ]);
-                        $dealsSuccess++;
-                    } catch (\Exception $e) {
-                        if ($command instanceof Command) {
-                            $command->error("Failed to store deal (ID: {$dealData['id']}): " . $e->getMessage());
-                        }
-                        $dealsError++;
-                    }
-                }
-
-                if ($command instanceof Command) {
-                    $command->info("Deals: {$dealsSuccess} stored successfully, {$dealsError} failed");
-                }
-            }
-
             // Store document types
             if (!empty($data['document_types'])) {
                 if ($command instanceof Command) {
@@ -325,6 +371,62 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Contact Entries: {$contactEntriesSuccess} stored successfully, {$contactEntriesError} failed");
+                }
+            }
+
+            // Store contracts
+            if (!empty($data['contracts'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing contracts...');
+                }
+
+                $contractsSuccess = 0;
+                $contractsError = 0;
+                foreach ($data['contracts'] as $contractData) {
+                    try {
+                        $this->storeContractAction->handle([
+                            'contractData' => $contractData,
+                            'command' => $command
+                        ]);
+                        $contractsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store contract (ID: {$contractData['id']}): " . $e->getMessage());
+                        }
+                        $contractsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Contracts: {$contractsSuccess} stored successfully, {$contractsError} failed");
+                }
+            }
+
+            // Store deals
+            if (!empty($data['deals'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing deals...');
+                }
+
+                $dealsSuccess = 0;
+                $dealsError = 0;
+                foreach ($data['deals'] as $dealData) {
+                    try {
+                        $this->storeDealAction->handle([
+                            'dealData' => $dealData,
+                            'command' => $command
+                        ]);
+                        $dealsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store deal (ID: {$dealData['id']}): " . $e->getMessage());
+                        }
+                        $dealsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Deals: {$dealsSuccess} stored successfully, {$dealsError} failed");
                 }
             }
 

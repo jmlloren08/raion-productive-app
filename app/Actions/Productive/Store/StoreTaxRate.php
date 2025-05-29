@@ -1,32 +1,34 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Store;
 
-use App\Models\ProductiveDocumentStyle;
-use App\Models\ProductiveAttachment;
+use App\Actions\Productive\AbstractAction;
+use App\Models\ProductiveTaxRate;
+use App\Models\ProductiveSubsidiary;
+use App\Models\ProductiveOrganization;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class StoreDocumentStyle extends AbstractAction
+class StoreTaxRate extends AbstractAction
 {
     /**
-     * Required fields that must be present in the document style data
+     * Required fields that must be present in the tax rate data
      */
     protected array $requiredFields = [
-        'name',
+        'name'
     ];
 
     /**
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
-        'attachment_id' => ProductiveAttachment::class
+        'subsidiary_id' => ProductiveSubsidiary::class,
     ];
 
     /**
-     * Store a document style in the database
+     * Store a tax rate in the database
      *
      * @param array $parameters
      * @return bool
@@ -34,38 +36,38 @@ class StoreDocumentStyle extends AbstractAction
      */
     public function handle(array $parameters = []): bool
     {
-        $documentStyleData = $parameters['documentStyleData'] ?? null;
+        $taxRateData = $parameters['taxRateData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        if (!$documentStyleData) {
-            throw new \Exception('Document style data is required');
+        if (!$taxRateData) {
+            throw new \Exception('Tax rate data is required');
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info("Processing document style: {$documentStyleData['id']}");
+                $command->info("Processing tax rate: {$taxRateData['id']}");
             }
 
             // Validate basic data structure
-            if (!isset($documentStyleData['id'])) {
+            if (!isset($taxRateData['id'])) {
                 throw new \Exception("Missing required field 'id' in root data object");
             }
 
-            $attributes = $documentStyleData['attributes'] ?? [];
-            $relationships = $documentStyleData['relationships'] ?? [];
+            $attributes = $taxRateData['attributes'] ?? [];
+            $relationships = $taxRateData['relationships'] ?? [];
 
             // Add type from root level if not in attributes
-            if (!isset($attributes['type']) && isset($documentStyleData['type'])) {
-                $attributes['type'] = $documentStyleData['type'];
+            if (!isset($attributes['type']) && isset($taxRateData['type'])) {
+                $attributes['type'] = $taxRateData['type'];
             }
 
             // Validate required fields
-            $this->validateRequiredFields($attributes, $documentStyleData['id'], $command);
+            $this->validateRequiredFields($attributes, $taxRateData['id'], $command);
 
             // Prepare base data
             $data = [
-                'id' => $documentStyleData['id'],
-                'type' => $attributes['type'] ?? $documentStyleData['type'] ?? 'document_styles',
+                'id' => $taxRateData['id'],
+                'type' => $attributes['type'] ?? $taxRateData['type'] ?? 'tax_rates',
             ];
 
             // Add all attributes with safe fallbacks
@@ -73,32 +75,29 @@ class StoreDocumentStyle extends AbstractAction
                 $data[$key] = $value;
             }
 
-            // Handle JSON fields
-            $this->handleJsonFields($data);
-
             // Handle foreign key relationships
-            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Document Style', $command);
+            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Tax Rate', $command);
 
             // Validate data types
             $this->validateDataTypes($data);
 
-            // Create or update document style
-            ProductiveDocumentStyle::updateOrCreate(
-                ['id' => $documentStyleData['id']],
+            // Create or update tax rate
+            ProductiveTaxRate::updateOrCreate(
+                ['id' => $taxRateData['id']],
                 $data
             );
 
             if ($command instanceof Command) {
-                $command->info("Successfully stored document style: {$attributes['name']} (ID: {$documentStyleData['id']})");
+                $command->info("Successfully stored tax rate: {$attributes['name']} (ID: {$taxRateData['id']})");
             }
 
             return true;
 
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Failed to store document style {$documentStyleData['id']}: " . $e->getMessage());
+                $command->error("Failed to store tax rate {$taxRateData['id']}: " . $e->getMessage());
             }
-            Log::error("Failed to store document style {$documentStyleData['id']}: " . $e->getMessage());
+            Log::error("Failed to store tax rate {$taxRateData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -107,11 +106,11 @@ class StoreDocumentStyle extends AbstractAction
      * Validate that all required fields are present
      *
      * @param array $attributes
-     * @param string $documentStyleId
+     * @param string $taxRateId
      * @param Command|null $command
      * @throws \Exception
      */
-    protected function validateRequiredFields(array $attributes, string $documentStyleId, ?Command $command): void
+    protected function validateRequiredFields(array $attributes, string $taxRateId, ?Command $command): void
     {
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
@@ -121,7 +120,7 @@ class StoreDocumentStyle extends AbstractAction
         }
 
         if (!empty($missingFields)) {
-            $message = "Required fields missing for document style {$documentStyleId}: " . implode(', ', $missingFields);
+            $message = "Required fields missing for tax rate {$taxRateId}: " . implode(', ', $missingFields);
             if ($command) {
                 $command->error($message);
             }
@@ -130,38 +129,18 @@ class StoreDocumentStyle extends AbstractAction
     }
 
     /**
-     * Handle JSON fields in the data
-     *
-     * @param array &$data
-     */
-    protected function handleJsonFields(array &$data): void
-    {
-        $jsonFields = [
-            'styles',
-        ];
-
-        foreach ($jsonFields as $field) {
-            if (isset($data[$field])) {
-                if (is_array($data[$field])) {
-                    $data[$field] = json_encode($data[$field]);
-                }
-            }
-        }
-    }
-
-    /**
      * Handle foreign key relationships
      *
      * @param array $relationships
      * @param array &$data
-     * @param string $documentStyleName
+     * @param string $taxRateName
      * @param Command|null $command
      */
-    protected function handleForeignKeys(array $relationships, array &$data, string $documentStyleName, ?Command $command): void
+    protected function handleForeignKeys(array $relationships, array &$data, string $taxRateName, ?Command $command): void
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'attachments' => 'attachment_id'
+            'subsidiary' => 'subsidiary_id'
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -176,7 +155,7 @@ class StoreDocumentStyle extends AbstractAction
 
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Document style '{$documentStyleName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Tax rate '{$taxRateName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
                     $data[$dbKey] = null;
                 } else {
@@ -203,9 +182,12 @@ class StoreDocumentStyle extends AbstractAction
     {
         $rules = [
             'name' => 'required|string',
-            'styles' => 'nullable|json',
-
-            'attachment_id' => 'nullable|string'
+            'primary_component_name' => 'required|string',
+            'primary_component_value' => 'numeric|min:0|max:100',
+            'secondary_component_name' => 'nullable|string',
+            'secondary_component_value' => 'nullable|numeric|min:0|max:100',
+            
+            'subsidiary_id' => 'nullable|string',
         ];
 
         $validator = Validator::make($data, $rules);

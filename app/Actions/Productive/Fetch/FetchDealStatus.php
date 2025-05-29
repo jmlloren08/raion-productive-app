@@ -1,21 +1,21 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class FetchCompanies extends AbstractAction
+class FetchDealStatus extends AbstractAction
 {
     /**
-     * Define include relationships for companies
+     * Define include relationships for deal statuses
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'default_subsidiary',
-        'default_tax_rate',
+        'pipeline'
     ];
 
     /**
@@ -24,13 +24,12 @@ class FetchCompanies extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['default_subsidiary'],
-        ['default_tax_rate'],
-        [] // Empty array means no includes
+        ['pipeline'],
+        []  // Empty array means no includes
     ];
 
     /**
-     * Fetch companies from Productive API
+     * Fetch deal statuses from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -43,17 +42,17 @@ class FetchCompanies extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'companies' => [],
+                'deal_statuses' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching companies from Productive API...');
+                $command->info('Fetching deal statuses...');
             }
 
-            $allCompanies = [];
+            $allDealStatuses = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -61,17 +60,18 @@ class FetchCompanies extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    $response = $apiClient->get('/companies', [
+                    // Following Productive API docs for deal statuses
+                    $response = $apiClient->get("deal_statuses", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
                         'sort' => 'name'
-                    ]);
+                    ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch companies: ' . $response->body());
+                        throw new \Exception('Failed to fetch deal statuses: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -83,22 +83,22 @@ class FetchCompanies extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'companies' => [],
+                            'deal_statuses' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $companies = $responseBody['data'];
+                    $dealStatuses = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $companies = $processIncludedAction->handle([
+                    $dealStatuses = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $companies,
+                        'resources' => $dealStatuses,
                         'command' => $command
                     ]);
 
-                    $allCompanies = array_merge($allCompanies, $companies);
+                    $allDealStatuses = array_merge($allDealStatuses, $dealStatuses);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -106,22 +106,22 @@ class FetchCompanies extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($companies) < $pageSize) {
+                    if (count($dealStatuses) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching companies page {$page}...");
+                            $command->info("Fetching deal statuses page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($companies) . " companies from page " . ($page - 1));
+                        $command->info("Fetched " . count($dealStatuses) . " deal statuses from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch companies page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch deal statuses page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -139,55 +139,55 @@ class FetchCompanies extends AbstractAction
 
                     return [
                         'success' => false,
-                        'companies' => [],
-                        'error' => 'Error fetching companies page ' . $page . ': ' . $e->getMessage()
+                        'deal_statuses' => [],
+                        'error' => 'Error fetching deal statuses page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allCompanies) . ' companies in total');
+                $command->info('Found ' . count($allDealStatuses) . ' deal statuses in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allCompanies);
-                $this->logRelationshipStats($relationshipStats, count($allCompanies), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allDealStatuses);
+                $this->logRelationshipStats($relationshipStats, count($allDealStatuses), $command);
             }
 
             return [
                 'success' => true,
-                'companies' => $allCompanies
+                'deal_statuses' => $allDealStatuses
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in companies fetch process: " . $e->getMessage());
+                $command->error("Error in deal statuses fetch process: " . $e->getMessage());
             }
-            
-            Log::error("Error in companies fetch process: " . $e->getMessage());
+
+            Log::error("Error in deal statuses fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'companies' => [],
-                'error' => 'Error in companies fetch process: ' . $e->getMessage()
+                'deal_statuses' => [],
+                'error' => 'Error in deal statuses fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for companies
+     * Calculate relationship statistics for deal statuses
      *
-     * @param array $companies
+     * @param array $dealStatuses
      * @return array
      */
-    protected function calculateRelationshipStats(array $companies): array
+    protected function calculateRelationshipStats(array $dealStatuses): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($companies as $company) {
-            if (isset($company['relationships'])) {
+        foreach ($dealStatuses as $dealStatus) {
+            if (isset($dealStatus['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($company['relationships'][$relationship]['data']['id']) ||
-                        (isset($company['relationships'][$relationship]['data']) && is_array($company['relationships'][$relationship]['data']))
+                        isset($dealStatus['relationships'][$relationship]['data']['id']) ||
+                        (isset($dealStatus['relationships'][$relationship]['data']) && is_array($dealStatus['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -202,16 +202,16 @@ class FetchCompanies extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalCompanies
+     * @param int $totalDealStatuses
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalCompanies, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalDealStatuses, Command $command): void
     {
-        if ($totalCompanies > 0) {
+        if ($totalDealStatuses > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalCompanies) * 100, 2);
-                $command->info("Companies with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalDealStatuses) * 100, 2);
+                $command->info("Deal statuses with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }
@@ -233,4 +233,4 @@ class FetchCompanies extends AbstractAction
         }
         $command->info("Page {$page} included data: " . json_encode($includedTypes));
     }
-}
+} 
