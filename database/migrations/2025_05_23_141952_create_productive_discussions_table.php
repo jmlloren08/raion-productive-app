@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('productive_discussions', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('discussions'); // type of discussion, e.g., 'email', 'chat', etc.
             // Core attributes
             $table->text('excerpt')->nullable();
             $table->timestamp('resolved_at')->nullable();
             $table->json('subscriber_ids')->nullable();
-            // Foreign keys without constraints - we'll add constraints in a separate migration
-            $table->unsignedBigInteger('organization_id')->nullable();
-            $table->unsignedBigInteger('page_id')->nullable();
+            // Relationships    
+            $table->string('page_id')->nullable();
+            
             $table->timestamps();
+            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

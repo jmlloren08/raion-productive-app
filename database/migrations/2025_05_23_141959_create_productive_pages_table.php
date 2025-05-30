@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_pages', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('pages'); // type of page, e.g., 'project', 'task', etc.
             // Core attributes
             $table->text('cover_image_meta')->nullable();
@@ -32,11 +32,10 @@ return new class extends Migration
             $table->integer('root_page_id')->nullable();
             $table->uuid('public_uuid')->nullable();
             $table->boolean('public')->default(false);
-            // Foreign keys without constraints - we'll add constraints in a separate migration
-            $table->unsignedBigInteger('organization_id')->nullable();
-            $table->unsignedBigInteger('creator_id')->nullable();
-            $table->unsignedBigInteger('project_id')->nullable();
-            $table->unsignedBigInteger('attachment_id')->nullable();
+            // Relationships
+            $table->string('creator_id')->nullable();
+            $table->string('project_id')->nullable();
+            $table->string('attachment_id')->nullable();
             $table->json('template_object')->nullable();
 
             $table->timestamps();

@@ -20,6 +20,7 @@ class ProductiveApa extends Model
         'id',
         'type',
         'target_type',
+        
         'person_id',
         'deal_id',
         'approval_policy_id',

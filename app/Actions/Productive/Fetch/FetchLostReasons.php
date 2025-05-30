@@ -15,7 +15,7 @@ class FetchLostReasons extends AbstractAction
      * @var array
      */
     protected array $includeRelationships = [
-        'company'
+        ''
     ];
 
     /**
@@ -24,7 +24,7 @@ class FetchLostReasons extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['company'],
+        [''],
         []  // Empty array means no includes
     ];
 

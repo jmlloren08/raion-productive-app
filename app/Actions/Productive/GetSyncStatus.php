@@ -2,6 +2,7 @@
 
 namespace App\Actions\Productive;
 
+use App\Models\ProductiveApa;
 use App\Models\ProductiveCompany;
 use App\Models\ProductiveProject;
 use App\Models\ProductiveDeal;
@@ -17,6 +18,14 @@ use App\Models\ProductiveContactEntry;
 use App\Models\ProductiveLostReason;
 use App\Models\ProductiveDealStatus;
 use App\Models\ProductiveContract;
+use App\Models\ProductivePurchaseOrder;
+use App\Models\ProductiveApprovalPolicyAssignment;
+use App\Models\ProductiveApprovalPolicy;
+use App\Models\ProductivePipeline;
+use App\Models\ProductiveAttachment;
+use App\Models\ProductiveBill;
+use App\Models\ProductiveTeam;
+use App\Models\ProductiveEmail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -54,10 +63,19 @@ class GetSyncStatus extends AbstractAction
                 'workflows_count' => ProductiveWorkflow::count(),
                 'contact_entries_count' => ProductiveContactEntry::count(),
                 'lost_reasons_count' => ProductiveLostReason::count(),
+                'pipelines_count' => ProductivePipeline::count(),
                 'deal_statuses_count' => ProductiveDealStatus::count(),
                 'contracts_count' => ProductiveContract::count(),
+                'purchase_orders_count' => ProductivePurchaseOrder::count(),
                 'deals_count' => ProductiveDeal::count(),
+                'approval_policies_count' => ProductiveApprovalPolicy::count(),
+                'approval_policy_assignments_count' => ProductiveApa::count(),
+                'emails_count' => ProductiveEmail::count(),
+                'bills_count' => ProductiveBill::count(),
+                'attachments_count' => ProductiveAttachment::count(),
+                'teams_count' => ProductiveTeam::count(),
             ];
+
             // Get detailed relationship stats
             $relationshipStats = $this->getRelationshipStatsAction->handle();
 

@@ -18,8 +18,10 @@ class ProductiveTaxRate extends Model
     public $timestamps = false; // Disable Laravel timestamps
 
     protected $fillable = [
+        // Base data
         'id',
         'type',
+        // Attributes
         'name',
         'primary_component_name',
         'primary_component_value',

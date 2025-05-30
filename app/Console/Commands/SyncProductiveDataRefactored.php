@@ -16,6 +16,15 @@ use App\Actions\Productive\Fetch\FetchProjects;
 use App\Actions\Productive\Fetch\FetchSubsidiaries;
 use App\Actions\Productive\Fetch\FetchTaxRates;
 use App\Actions\Productive\Fetch\FetchWorkflows;
+use App\Actions\Productive\Fetch\FetchPurchaseOrders;
+use App\Actions\Productive\Fetch\FetchApprovalPolicyAssignments;
+use App\Actions\Productive\Fetch\FetchApprovalPolicies;
+use App\Actions\Productive\Fetch\FetchPipelines;
+use App\Actions\Productive\Fetch\FetchAttachments;
+use App\Actions\Productive\Fetch\FetchBills;
+use App\Actions\Productive\Fetch\FetchTeams;
+use App\Actions\Productive\Fetch\FetchEmails;
+use App\Actions\Productive\Fetch\FetchInvoices;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
 use App\Models\ProductiveContactEntry;
@@ -40,7 +49,16 @@ class SyncProductiveDataRefactored extends Command
         'document_styles' => [],
         'deal_statuses' => [],
         'lost_reasons' => [],
-        'contracts' => []
+        'contracts' => [],
+        'purchase_orders' => [],
+        'approval_policy_assignments' => [],
+        'approval_policies' => [],
+        'pipelines' => [],
+        'attachments' => [],
+        'bills' => [],
+        'teams' => [],
+        'emails' => [],
+        'invoices' => []
     ];
 
     public function __construct(
@@ -58,6 +76,15 @@ class SyncProductiveDataRefactored extends Command
         private FetchDealStatus $fetchDealStatusAction,
         private FetchLostReasons $fetchLostReasonsAction,
         private FetchContracts $fetchContractsAction,
+        private FetchPurchaseOrders $fetchPurchaseOrdersAction,
+        private FetchApprovalPolicyAssignments $fetchApprovalPolicyAssignmentsAction,
+        private FetchApprovalPolicies $fetchApprovalPoliciesAction,
+        private FetchPipelines $fetchPipelinesAction,
+        private FetchAttachments $fetchAttachmentsAction,
+        private FetchBills $fetchBillsAction,
+        private FetchTeams $fetchTeamsAction,
+        private FetchEmails $fetchEmailsAction,
+        private FetchInvoices $fetchInvoicesAction,
         private StoreData $storeDataAction,
         private ValidateDataIntegrity $validateDataIntegrityAction
     ) {
@@ -222,6 +249,58 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['contact_entries'] = $contactEntries['contact_entries'];
 
+            // Fetch contracts
+            $contracts = $this->fetchContractsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$contracts['success']) {
+                $this->error('Failed to fetch contracts: ' . ($contracts['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['contracts'] = $contracts['contracts'];
+
+            // Fetch approval policy assignments
+            $approvalPolicyAssignments = $this->fetchApprovalPolicyAssignmentsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$approvalPolicyAssignments['success']) {
+                $this->error('Failed to fetch approval policy assignments: ' . ($approvalPolicyAssignments['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['approval_policy_assignments'] = $approvalPolicyAssignments['approval_policy_assignments'];
+
+            // Fetch approval policies
+            $approvalPolicies = $this->fetchApprovalPoliciesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$approvalPolicies['success']) {
+                $this->error('Failed to fetch approval policies: ' . ($approvalPolicies['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['approval_policies'] = $approvalPolicies['approval_policies'];
+
+            // Fetch pipelines
+            $pipelines = $this->fetchPipelinesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$pipelines['success']) {
+                $this->error('Failed to fetch pipelines: ' . ($pipelines['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['pipelines'] = $pipelines['pipelines'];
+
             // Fetch deals
             $deals = $this->fetchDealsAction->handle([
                 'apiClient' => $apiClient,
@@ -235,18 +314,83 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['deals'] = $deals['deals'];
 
-            // Fetch contracts
-            $contracts = $this->fetchContractsAction->handle([
+            // Fetch purchase orders
+            $purchaseOrders = $this->fetchPurchaseOrdersAction->handle([
                 'apiClient' => $apiClient,
                 'command' => $this
             ]);
 
-            if (!$contracts['success']) {
-                $this->error('Failed to fetch contracts: ' . ($contracts['error'] ?? 'Unknown error'));
+            if (!$purchaseOrders['success']) {
+                $this->error('Failed to fetch purchase orders: ' . ($purchaseOrders['error'] ?? 'Unknown error'));
                 return 1;
             }
 
-            $this->data['contracts'] = $contracts['contracts'];
+            $this->data['purchase_orders'] = $purchaseOrders['purchase_orders'];
+
+            // Fetch emails
+            $emails = $this->fetchEmailsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$emails['success']) {
+                $this->error('Failed to fetch emails: ' . ($emails['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['emails'] = $emails['emails'];
+
+            // Fetch bills
+            $bills = $this->fetchBillsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$bills['success']) {
+                $this->error('Failed to fetch bills: ' . ($bills['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['bills'] = $bills['bills'];
+
+            // Fetch attachments
+            $attachments = $this->fetchAttachmentsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$attachments['success']) {
+                $this->error('Failed to fetch attachments: ' . ($attachments['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['attachments'] = $attachments['attachments'];
+
+            // Fetch teams
+            $teams = $this->fetchTeamsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$teams['success']) {
+                $this->error('Failed to fetch teams: ' . ($teams['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['teams'] = $teams['teams'];
+
+            // Fetch invoices
+            $invoices = $this->fetchInvoicesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$invoices['success']) {
+                $this->error('Failed to fetch invoices: ' . ($invoices['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['invoices'] = $invoices['invoices'];
 
             // Store data in MySQL
             $this->info('Storing data in database...');
@@ -262,7 +406,7 @@ class SyncProductiveDataRefactored extends Command
 
             // Validate data integrity
             $this->info('Validating data integrity...');
-            $integrityStats = $this->validateDataIntegrityAction->handle([
+            $this->validateDataIntegrityAction->handle([
                 'command' => $this
             ]);
 
@@ -281,8 +425,16 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Document Types synced: ' . count($this->data['document_types']));
             $this->info('Contact Entries synced: ' . count($this->data['contact_entries']));
             $this->info('Projects synced: ' . count($this->data['projects']));
-            $this->info('Deal Statuses synced: ' . count($this->data['deal_statuses']));
             $this->info('Contracts synced: ' . count($this->data['contracts']));
+            $this->info('Approval Policy Assignments synced: ' . count($this->data['approval_policy_assignments']));
+            $this->info('Deal Statuses synced: ' . count($this->data['deal_statuses']));
+            $this->info('Purchase Orders synced: ' . count($this->data['purchase_orders']));
+            $this->info('Pipelines synced: ' . count($this->data['pipelines']));
+            $this->info('Attachments synced: ' . count($this->data['attachments']));
+            $this->info('Bills synced: ' . count($this->data['bills']));
+            $this->info('Teams synced: ' . count($this->data['teams']));
+            $this->info('Emails synced: ' . count($this->data['emails']));
+            $this->info('Invoices synced: ' . count($this->data['invoices']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 

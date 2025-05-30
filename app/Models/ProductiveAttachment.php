@@ -23,8 +23,10 @@ class ProductiveAttachment extends Model
      * @var array
      */
     protected $fillable = [
+        // Base data
         'id',
         'type',
+        // Attributes
         'name',
         'content_type',
         'size',
@@ -38,7 +40,7 @@ class ProductiveAttachment extends Model
         'message_id',
         'external_id',
         'attachable_type',
-        'organization_id',
+        // Relationships
         'creator_id',
         'invoice_id',
         'purchase_order_id',
@@ -61,18 +63,9 @@ class ProductiveAttachment extends Model
     protected $casts = [
         'size' => 'integer',
         'resized' => 'boolean',
-        'created_at_api' => 'datetime',
-        'deleted_at_api' => 'datetime',
-        'deleted_at' => 'datetime',
+        'created_at_api' => 'timestamp',
+        'deleted_at_api' => 'timestamp',
     ];
-
-    /**
-     * Get the organization that owns the attachment.
-     */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(ProductiveSubsidiary::class, 'organization_id');
-    }
 
     /**
      * Get the creator of the attachment.

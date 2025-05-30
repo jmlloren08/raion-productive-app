@@ -17,6 +17,15 @@ use App\Models\ProductiveContactEntry;
 use App\Models\ProductiveLostReason;
 use App\Models\ProductiveDealStatus;
 use App\Models\ProductiveContract;
+use App\Models\ProductivePurchaseOrder;
+use App\Models\ProductiveApa;
+use App\Models\ProductiveApprovalPolicy;
+use App\Models\ProductivePipeline;
+use App\Models\ProductiveAttachment;
+use App\Models\ProductiveBill;
+use App\Models\ProductiveTeam;
+use App\Models\ProductiveEmail;
+use App\Models\ProductiveInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Console\Command;
@@ -92,9 +101,23 @@ class GetRelationshipStats extends AbstractAction
                 'lost_reasons' => [
                     'total' => ProductiveLostReason::count(),
                 ],
+                'pipelines' => [
+                    'total' => ProductivePipeline::count(),
+                    'with_creator' => ProductivePipeline::whereNotNull('creator_id')->count(),
+                    'with_updater' => ProductivePipeline::whereNotNull('updater_id')->count(),
+                ],
                 'deal_statuses' => [
                     'total' => ProductiveDealStatus::count(),
                     'with_pipeline' => ProductiveDealStatus::whereNotNull('pipeline_id')->count(),
+                ],
+                'approval_policies' => [
+                    'total' => ProductiveApprovalPolicy::count(),
+                ],
+                'approval_policy_assignments' => [
+                    'total' => ProductiveApa::count(),
+                    'with_person' => ProductiveApa::whereNotNull('person_id')->count(),
+                    'with_deal' => ProductiveApa::whereNotNull('deal_id')->count(),
+                    'with_approval_policy' => ProductiveApa::whereNotNull('approval_policy_id')->count(),
                 ],
                 'contracts' => [
                     'total' => ProductiveContract::count(),
@@ -115,19 +138,61 @@ class GetRelationshipStats extends AbstractAction
                     'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
                     'with_apa' => ProductiveDeal::whereNotNull('apa_id')->count(),
                 ],
+                'purchase_orders' => [
+                    'total' => ProductivePurchaseOrder::count(),
+                    'with_company' => ProductivePurchaseOrder::whereNotNull('company_id')->count(),
+                    'with_contact_entry' => ProductivePurchaseOrder::whereNotNull('contact_entry_id')->count(),
+                    'with_subsidiary' => ProductivePurchaseOrder::whereNotNull('subsidiary_id')->count(),
+                    'with_tax_rate' => ProductivePurchaseOrder::whereNotNull('tax_rate_id')->count(),
+                    'with_document_type' => ProductivePurchaseOrder::whereNotNull('document_type_id')->count(),
+                    'with_document_style' => ProductivePurchaseOrder::whereNotNull('document_style_id')->count()
+                ],
+                'emails' => [
+                    'total' => ProductiveEmail::count(),
+                    'with_creator' => ProductiveEmail::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveEmail::whereNotNull('deal_id')->count(),
+                    'with_invoice' => ProductiveEmail::whereNotNull('invoice_id')->count(),
+                    'with_payment_reminder_sequence' => ProductiveEmail::whereNotNull('payment_reminder_sequence_id')->count(),
+                    'with_attachment' => ProductiveEmail::whereNotNull('attachment_id')->count(),
+                ],
+                'bills' => [
+                    'total' => ProductiveBill::count(),
+                    'with_purchase_order' => ProductiveBill::whereNotNull('purchase_order_id')->count(),
+                    'with_creator' => ProductiveBill::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveBill::whereNotNull('deal_id')->count(),
+                    'with_attachment' => ProductiveBill::whereNotNull('attachment_id')->count(),
+                ],
+                'attachments' => [
+                    'total' => ProductiveAttachment::count(),
+                    'with_creator' => ProductiveAttachment::whereNotNull('creator_id')->count(),
+                    'with_invoice' => ProductiveAttachment::whereNotNull('invoice_id')->count(),
+                    'with_purchase_order' => ProductiveAttachment::whereNotNull('purchase_order_id')->count(),
+                    'with_bill' => ProductiveAttachment::whereNotNull('bill_id')->count(),
+                    'with_email' => ProductiveAttachment::whereNotNull('email_id')->count(),
+                    'with_page' => ProductiveAttachment::whereNotNull('page_id')->count(),
+                    'with_expense' => ProductiveAttachment::whereNotNull('expense_id')->count(),
+                    'with_comment' => ProductiveAttachment::whereNotNull('comment_id')->count(),
+                    'with_task' => ProductiveAttachment::whereNotNull('task_id')->count(),
+                    'with_document_style' => ProductiveAttachment::whereNotNull('document_style_id')->count(),
+                    'with_document_type' => ProductiveAttachment::whereNotNull('document_type_id')->count(),
+                    'with_deal' => ProductiveAttachment::whereNotNull('deal_id')->count(),
+                ],
+                'teams' => [
+                    'total' => ProductiveTeam::count(),
+                ],
+                'invoices' => [
+                    'total' => ProductiveInvoice::count(),
+                    'with_company' => ProductiveInvoice::whereNotNull('company_id')->count(),
+                    'with_creator' => ProductiveInvoice::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveInvoice::whereNotNull('deal_id')->count(),
+                    'with_contact_entry' => ProductiveInvoice::whereNotNull('contact_entry_id')->count(),
+                    'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
+                    'with_tax_rate' => ProductiveInvoice::whereNotNull('tax_rate_id')->count(),
+                    'with_document_type' => ProductiveInvoice::whereNotNull('document_type_id')->count(),
+                    'with_document_style' => ProductiveInvoice::whereNotNull('document_style_id')->count(),
+                    'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count()
+                ],
             ];
-
-            // Add percentage calculations for better readability
-            foreach ($stats as $entity => &$data) {
-                $total = max(1, $data['total']); // Avoid division by zero
-
-                foreach ($data as $key => $value) {
-                    // Only calculate percentages for numeric values, skip arrays and 'total'
-                    if ($key !== 'total' && is_numeric($value) && !is_array($value)) {
-                        $data[$key . '_pct'] = round(($value / $total) * 100, 2);
-                    }
-                }
-            }
 
             // Output report if command is provided
             if ($command instanceof Command) {
@@ -146,7 +211,22 @@ class GetRelationshipStats extends AbstractAction
                 }
             }
 
-            return $stats;
+            return [
+                'projects' => $stats['projects'],
+                'companies' => $stats['companies'],
+                'subsidiaries' => $stats['subsidiaries'],
+                'deals' => $stats['deals'],
+                'people' => $stats['people'],
+                'purchase_orders' => $stats['purchase_orders'],
+                'approval_policy_assignments' => $stats['approval_policy_assignments'],
+                'approval_policies' => $stats['approval_policies'],
+                'pipelines' => $stats['pipelines'],
+                'emails' => $stats['emails'],
+                'bills' => $stats['bills'],
+                'attachments' => $stats['attachments'],
+                'teams' => $stats['teams'],
+                'invoices' => $stats['invoices'],
+            ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
                 $command->error('Error getting relationship statistics: ' . $e->getMessage());
@@ -165,7 +245,18 @@ class GetRelationshipStats extends AbstractAction
                 'workflows' => ['total' => ProductiveWorkflow::count()],
                 'contact_entries' => ['total' => ProductiveContactEntry::count()],
                 'lost_reasons' => ['total' => ProductiveLostReason::count()],
+                'deal_statuses' => ['total' => ProductiveDealStatus::count()],
+                'contracts' => ['total' => ProductiveContract::count()],
+                'purchase_orders' => ['total' => ProductivePurchaseOrder::count()],
                 'deals' => ['total' => ProductiveDeal::count()],
+                'approval_policies' => ['total' => ProductiveApprovalPolicy::count()],
+                'approval_policy_assignments' => ['total' => ProductiveApa::count()],
+                'pipelines' => ['total' => ProductivePipeline::count()],
+                'emails' => ['total' => ProductiveEmail::count()],
+                'bills' => ['total' => ProductiveBill::count()],
+                'attachments' => ['total' => ProductiveAttachment::count()],
+                'teams' => ['total' => ProductiveTeam::count()],
+                'invoices' => ['total' => ProductiveInvoice::count()],
             ];
         }
     }

@@ -20,8 +20,7 @@ return new class extends Migration
             $table->integer('color_id')->default(0);
             $table->integer('position')->default(0);
             $table->integer('category_id')->default(0);
-            // Foreign keys without constraints - we'll add constraints in a separate migration
-            $table->string('organization_id')->nullable();
+            // Relationships
             $table->string('workflow_id')->nullable();
             
             $table->timestamps();

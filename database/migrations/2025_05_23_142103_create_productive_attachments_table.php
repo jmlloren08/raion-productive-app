@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type')->default('attachments'); // type of attachment, e.g., 'file', 'image', etc.
             // Core attributes
             $table->string('name');
-            $table->string('content_type');
+            $table->string('content_type')->nullable();
             $table->integer('size');
             $table->text('url');
             $table->string('thumb')->nullable();
@@ -30,20 +30,19 @@ return new class extends Migration
             $table->string('external_id')->nullable();
             $table->string('attachable_type');
 
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('creator_id')->nullable();
-            $table->foreignId('invoice_id')->nullable();
-            $table->foreignId('purchase_order_id')->nullable();
-            $table->foreignId('bill_id')->nullable();
-            $table->foreignId('email_id')->nullable();
-            $table->foreignId('page_id')->nullable();
-            $table->foreignId('expense_id')->nullable();
-            $table->foreignId('comment_id')->nullable();
-            $table->foreignId('task_id')->nullable();
-            $table->foreignId('document_style_id')->nullable();
-            $table->foreignId('document_type_id')->nullable();
+            $table->string('creator_id')->nullable();
+            $table->string('invoice_id')->nullable();
+            $table->string('purchase_order_id')->nullable();
+            $table->string('bill_id')->nullable();
+            $table->string('email_id')->nullable();
+            $table->string('page_id')->nullable();
+            $table->string('expense_id')->nullable();
+            $table->string('comment_id')->nullable();
+            $table->string('task_id')->nullable();
+            $table->string('document_style_id')->nullable();
+            $table->string('document_type_id')->nullable();
             $table->string('deal_id')->nullable();
-            // Relationships
+            
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving
         });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_time_entry_versions', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('time_entry_versions'); // type of entry, e.g., 'time', 'expense', etc.
             // Basic attributes
             $table->string('event');

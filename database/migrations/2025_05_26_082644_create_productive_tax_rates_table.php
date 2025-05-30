@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('secondary_component_value', 10, 2)->nullable();
             $table->timestamp('archived_at')->nullable();
             // Relationships
-            $table->foreignId('subsidiary_id')->nullable();
+            $table->string('subsidiary_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

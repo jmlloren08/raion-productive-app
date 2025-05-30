@@ -13,15 +13,14 @@ return new class extends Migration
     {
         Schema::create('productive_service_types', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('service_types'); // type of service, e.g., 'consulting', 'development', etc.
             // Core attributes
             $table->string('name')->nullable();
             $table->timestamp('archived_at')->nullable();
-            $table->string('description')->nullable();
+            $table->text('description')->nullable();
             // Relationships
-            $table->foreignId('organization_id')->nullable(); // Foreign key to the organization
-            $table->foreignId('assignee_id')->nullable(); 
+            $table->string('assignee_id')->nullable(); 
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

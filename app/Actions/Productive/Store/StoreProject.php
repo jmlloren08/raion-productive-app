@@ -60,11 +60,6 @@ class StoreProject extends AbstractAction
             $attributes = $projectData['attributes'] ?? [];
             $relationships = $projectData['relationships'] ?? [];
 
-            // Debug log relationships
-            // if ($command instanceof Command) {
-            //     $command->info("Project relationships: " . json_encode($relationships));
-            // }
-
             // Add type from root level if not in attributes
             if (!isset($attributes['type']) && isset($projectData['type'])) {
                 $attributes['type'] = $projectData['type'];
@@ -89,11 +84,6 @@ class StoreProject extends AbstractAction
 
             // Handle foreign key relationships
             $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Project', $command);
-
-            // Debug log final data
-            // if ($command instanceof Command) {
-            //     $command->info("Final project data: " . json_encode($data));
-            // }
 
             // Validate data types
             $this->validateDataTypes($data);
@@ -239,6 +229,7 @@ class StoreProject extends AbstractAction
             'custom_fields' => 'nullable|json',
             'task_custom_fields_ids' => 'nullable|json',
             'task_custom_fields_positions' => 'nullable|json',
+            
             'company_id' => 'nullable|string',
             'project_manager_id' => 'nullable|string',
             'last_actor_id' => 'nullable|string',

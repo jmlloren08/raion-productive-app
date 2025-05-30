@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_integrations', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('integrations'); // type of integration, e.g., 'crm', 'email', etc.
             // Core attributes
             $table->string('name')->nullable();
@@ -88,10 +88,9 @@ return new class extends Migration
             $table->string('sage_business_name')->nullable();
             $table->json('tax_rate_mapping')->nullable();
             // Relationships
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('subsidiary_id')->nullable();
-            $table->foreignId('project_id')->nullable();
-            $table->foreignId('creator_id')->nullable();
+            $table->string('subsidiary_id')->nullable();
+            $table->string('project_id')->nullable();
+            $table->string('creator_id')->nullable();
             $table->string('deal_id')->nullable();
 
             $table->timestamps();

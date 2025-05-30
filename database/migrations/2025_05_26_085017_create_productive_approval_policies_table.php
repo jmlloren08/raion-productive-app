@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_approval_policies', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('approval_policies');
             // Core attributes
             $table->timestamp('archived_at')->nullable();
@@ -21,9 +21,7 @@ return new class extends Migration
             $table->boolean('default')->default(false);
             $table->text('description')->nullable();
             $table->string('name');
-            $table->integer('type_id')->default(0); // 0 = default, 1 = custom
-            // Relationships
-            $table->foreignId('organization_id')->nullable();
+            $table->integer('type_id')->default(0);
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

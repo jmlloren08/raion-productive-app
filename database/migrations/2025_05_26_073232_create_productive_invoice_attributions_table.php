@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('productive_invoice_attributions', function (Blueprint $table) {
-            $table->id();
+            // Primary key
+            $table->id('id')->primary();
             $table->string('type')->default('invoice_attributions');
             // Core attributes
             $table->date('date_from')->nullable();
@@ -24,9 +25,8 @@ return new class extends Migration
             $table->string('currency_default', 3);
             $table->string('currency_normalized', 3);
             // Relationships
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('invoice_id')->nullable();
-            $table->foreignId('budget_id')->nullable();
+            $table->string('invoice_id')->nullable();
+            $table->string('budget_id')->nullable();
            
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

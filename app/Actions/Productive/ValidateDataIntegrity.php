@@ -15,7 +15,17 @@ use App\Models\ProductiveDocumentStyle;
 use App\Models\ProductiveDealStatus;
 use App\Models\ProductiveLostReason;
 use App\Models\ProductiveContract;
+use App\Models\ProductivePurchaseOrder;
+use App\Models\ProductiveApa;
+use App\Models\ProductiveApprovalPolicy;
+use App\Models\ProductivePipeline;
+use App\Models\ProductiveAttachment;
+use App\Models\ProductiveBill;
+use App\Models\ProductiveTeam;
+use App\Models\ProductiveEmail;
+use App\Models\ProductiveInvoice;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class ValidateDataIntegrity extends AbstractAction
 {
@@ -41,6 +51,7 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_subsidiary' => ProductiveCompany::whereNotNull('default_subsidiary_id')->count(),
                     'with_tax_rate' => ProductiveCompany::whereNotNull('default_tax_rate_id')->count(),
                 ],
+
                 'projects' => [
                     'total' => ProductiveProject::count(),
                     'with_company' => ProductiveProject::whereNotNull('company_id')->count(),
@@ -66,14 +77,6 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_document_style' => ProductiveDocumentType::whereNotNull('document_style_id')->count(),
                     'with_attachment' => ProductiveDocumentType::whereNotNull('attachment_id')->count(),
                 ],
-                'contact_entries' => [
-                    'total' => ProductiveContactEntry::count(),
-                    'with_company' => ProductiveContactEntry::whereNotNull('company_id')->count(),
-                    'with_person' => ProductiveContactEntry::whereNotNull('person_id')->count(),
-                    'with_invoice' => ProductiveContactEntry::whereNotNull('invoice_id')->count(),
-                    'with_subsidiary' => ProductiveContactEntry::whereNotNull('subsidiary_id')->count(),
-                    'with_purchase_order' => ProductiveContactEntry::whereNotNull('purchase_order_id')->count()
-                ],
                 'subsidiaries' => [
                     'total' => ProductiveSubsidiary::count(),
                     'with_contact_entry' => ProductiveSubsidiary::whereNotNull('contact_entry_id')->count(),
@@ -89,6 +92,11 @@ class ValidateDataIntegrity extends AbstractAction
                     'total' => ProductiveDocumentStyle::count(),
                     'with_attachment' => ProductiveDocumentStyle::whereNotNull('attachment_id')->count(),
                 ],
+                'pipelines' => [
+                    'total' => ProductivePipeline::count(),
+                    'with_creator' => ProductivePipeline::whereNotNull('creator_id')->count(),
+                    'with_updater' => ProductivePipeline::whereNotNull('updater_id')->count()
+                ],
                 'deal_statuses' => [
                     'total' => ProductiveDealStatus::count(),
                     'with_pipeline' => ProductiveDealStatus::whereNotNull('pipeline_id')->count()
@@ -99,6 +107,32 @@ class ValidateDataIntegrity extends AbstractAction
                 'contracts' => [
                     'total' => ProductiveContract::count(),
                     'with_deal' => ProductiveContract::whereNotNull('deal_id')->count(),
+                ],
+                'purchase_orders' => [
+                    'total' => ProductivePurchaseOrder::count(),
+                    'with_deal' => ProductivePurchaseOrder::whereNotNull('deal_id')->count(),
+                    'with_creator' => ProductivePurchaseOrder::whereNotNull('creator_id')->count(),
+                    'with_document_type' => ProductivePurchaseOrder::whereNotNull('document_type_id')->count(),
+                    'with_attachment' => ProductivePurchaseOrder::whereNotNull('attachment_id')->count(),
+                    'with_bill_to' => ProductivePurchaseOrder::whereNotNull('bill_to_id')->count(),
+                    'with_bill_from' => ProductivePurchaseOrder::whereNotNull('bill_from_id')->count(),
+                ],
+                'contact_entries' => [
+                    'total' => ProductiveContactEntry::count(),
+                    'with_company' => ProductiveContactEntry::whereNotNull('company_id')->count(),
+                    'with_person' => ProductiveContactEntry::whereNotNull('person_id')->count(),
+                    'with_invoice' => ProductiveContactEntry::whereNotNull('invoice_id')->count(),
+                    'with_subsidiary' => ProductiveContactEntry::whereNotNull('subsidiary_id')->count(),
+                    'with_purchase_order' => ProductiveContactEntry::whereNotNull('purchase_order_id')->count()
+                ],
+                'approval_policies' => [
+                    'total' => ProductiveApprovalPolicy::count(),
+                ],
+                'approval_policy_assignments' => [
+                    'total' => ProductiveApa::count(),
+                    'with_person' => ProductiveApa::whereNotNull('person_id')->count(),
+                    'with_deal' => ProductiveApa::whereNotNull('deal_id')->count(),
+                    'with_approval_policy' => ProductiveApa::whereNotNull('approval_policy_id')->count(),
                 ],
                 'deals' => [
                     'total' => ProductiveDeal::count(),
@@ -114,6 +148,51 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_subsidiary' => ProductiveDeal::whereNotNull('subsidiary_id')->count(),
                     'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
                     'with_apa' => ProductiveDeal::whereNotNull('apa_id')->count(),
+                ],
+                'emails' => [
+                    'total' => ProductiveEmail::count(),
+                    'with_creator' => ProductiveEmail::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveEmail::whereNotNull('deal_id')->count(),
+                    'with_invoice' => ProductiveEmail::whereNotNull('invoice_id')->count(),
+                    'with_payment_reminder_sequence' => ProductiveEmail::whereNotNull('payment_reminder_sequence_id')->count(),
+                    'with_attachment' => ProductiveEmail::whereNotNull('attachment_id')->count()
+                ],
+                'bills' => [
+                    'total' => ProductiveBill::count(),
+                    'with_purchase_order' => ProductiveBill::whereNotNull('purchase_order_id')->count(),
+                    'with_creator' => ProductiveBill::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveBill::whereNotNull('deal_id')->count(),
+                    'with_attachment' => ProductiveBill::whereNotNull('attachment_id')->count()
+                ],
+                'attachments' => [
+                    'total' => ProductiveAttachment::count(),
+                    'with_creator' => ProductiveAttachment::whereNotNull('creator_id')->count(),
+                    'with_invoice' => ProductiveAttachment::whereNotNull('invoice_id')->count(),
+                    'with_purchase_order' => ProductiveAttachment::whereNotNull('purchase_order_id')->count(),
+                    'with_bill' => ProductiveAttachment::whereNotNull('bill_id')->count(),
+                    'with_email' => ProductiveAttachment::whereNotNull('email_id')->count(),
+                    'with_page' => ProductiveAttachment::whereNotNull('page_id')->count(),
+                    'with_expense' => ProductiveAttachment::whereNotNull('expense_id')->count(),
+                    'with_comment' => ProductiveAttachment::whereNotNull('comment_id')->count(),
+                    'with_task' => ProductiveAttachment::whereNotNull('task_id')->count(),
+                    'with_document_style' => ProductiveAttachment::whereNotNull('document_style_id')->count(),
+                    'with_document_type' => ProductiveAttachment::whereNotNull('document_type_id')->count(),
+                    'with_deal' => ProductiveAttachment::whereNotNull('deal_id')->count(),
+                ],
+                'teams' => [
+                    'total' => ProductiveTeam::count(),
+                ],
+                'invoices' => [
+                    'total' => ProductiveInvoice::count(),
+                    'with_company' => ProductiveInvoice::whereNotNull('company_id')->count(),
+                    'with_creator' => ProductiveInvoice::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveInvoice::whereNotNull('deal_id')->count(),
+                    'with_contact_entry' => ProductiveInvoice::whereNotNull('contact_entry_id')->count(),
+                    'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
+                    'with_tax_rate' => ProductiveInvoice::whereNotNull('tax_rate_id')->count(),
+                    'with_document_type' => ProductiveInvoice::whereNotNull('document_type_id')->count(),
+                    'with_document_style' => ProductiveInvoice::whereNotNull('document_style_id')->count(),
+                    'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count()
                 ],
             ];
 
@@ -198,6 +277,13 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- Total: {$stats['contracts']['total']}");
                 $command->info("- With Deal: {$stats['contracts']['with_deal']}");
 
+                // Approval Policy Assignments
+                $command->info("\nApproval Policy Assignments:");
+                $command->info("- Total: {$stats['approval_policy_assignments']['total']}");
+                $command->info("- With Person: {$stats['approval_policy_assignments']['with_person']}");
+                $command->info("- With Deal: {$stats['approval_policy_assignments']['with_deal']}");
+                $command->info("- With Approval Policy: {$stats['approval_policy_assignments']['with_approval_policy']}");
+
                 // Deals
                 $command->info("\nDeals:");
                 $command->info("- Total: {$stats['deals']['total']}");
@@ -213,30 +299,76 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Subsidiary: {$stats['deals']['with_subsidiary']}");
                 $command->info("- With Tax Rate: {$stats['deals']['with_tax_rate']}");
                 $command->info("- With APA: {$stats['deals']['with_apa']}");
-            }
 
-            // Validate relationships
-            $warnings = [];
+                // Purchase Orders
+                $command->info("\nPurchase Orders:");
+                $command->info("- Total: {$stats['purchase_orders']['total']}");
+                $command->info("- With Deal: {$stats['purchase_orders']['with_deal']}");
+                $command->info("- With Creator: {$stats['purchase_orders']['with_creator']}");
+                $command->info("- With Document Type: {$stats['purchase_orders']['with_document_type']}");
+                $command->info("- With Attachment: {$stats['purchase_orders']['with_attachment']}");
+                $command->info("- With Bill To: {$stats['purchase_orders']['with_bill_to']}");
+                $command->info("- With Bill From: {$stats['purchase_orders']['with_bill_from']}");
 
-            if ($command instanceof Command) {
-                $this->validateRelationships($command);
-            }
+                // Approval Policies
+                $command->info("\nApproval Policies:");
+                $command->info("Total: {$stats['approval_policies']['total']}");
 
-            // Check for deals with invalid lost reason relationships
-            $invalidLostReasonDeals = ProductiveDeal::whereNotNull('lost_reason_id')
-                ->whereNotIn('lost_reason_id', ProductiveLostReason::pluck('id'))
-                ->count();
-            if ($invalidLostReasonDeals > 0) {
-                $warnings[] = "Found {$invalidLostReasonDeals} deals with invalid lost reason relationships";
-            }
-            // Output warnings if any
-            if (!empty($warnings)) {
-                if ($command instanceof Command) {
-                    $command->warn("\nWarnings:");
-                    foreach ($warnings as $warning) {
-                        $command->warn("- {$warning}");
-                    }
-                }
+                // Pipelines
+                $command->info("\nPipelines:");
+                $command->info("- Total: {$stats['pipelines']['total']}");
+                $command->info("- With Creator: {$stats['pipelines']['with_creator']}");
+                $command->info("- With Updater: {$stats['pipelines']['with_updater']}");
+
+                // Emails
+                $command->info("\nEmails:");
+                $command->info("- Total: {$stats['emails']['total']}");
+                $command->info("- With Creator: {$stats['emails']['with_creator']}");
+                $command->info("- With Deal: {$stats['emails']['with_deal']}");
+                $command->info("- With Invoice: {$stats['emails']['with_invoice']}");
+                $command->info("- With Payment Reminder Sequence: {$stats['emails']['with_payment_reminder_sequence']}");
+                $command->info("- With Attachment: {$stats['emails']['with_attachment']}");
+
+                // Bills
+                $command->info("\nBills:");
+                $command->info("- Total: {$stats['bills']['total']}");
+                $command->info("- With Purchase Order: {$stats['bills']['with_purchase_order']}");
+                $command->info("- With Creator: {$stats['bills']['with_creator']}");
+                $command->info("- With Deal: {$stats['bills']['with_deal']}");
+                $command->info("- With Attachment: {$stats['bills']['with_attachment']}");
+
+                // Attachments
+                $command->info("\nAttachments:");
+                $command->info("- Total: {$stats['attachments']['total']}");
+                $command->info("- With Creator: {$stats['attachments']['with_creator']}");
+                $command->info("- With Invoice: {$stats['attachments']['with_invoice']}");
+                $command->info("- With Purchase Order: {$stats['attachments']['with_purchase_order']}");
+                $command->info("- With Bill: {$stats['attachments']['with_bill']}");
+                $command->info("- With Email: {$stats['attachments']['with_email']}");
+                $command->info("- With Page: {$stats['attachments']['with_page']}");
+                $command->info("- With Expense: {$stats['attachments']['with_expense']}");
+                $command->info("- With Comment: {$stats['attachments']['with_comment']}");
+                $command->info("- With Task: {$stats['attachments']['with_task']}");
+                $command->info("- With Document Style: {$stats['attachments']['with_document_style']}");
+                $command->info("- With Document Type: {$stats['attachments']['with_document_type']}");
+                $command->info("- With Deal: {$stats['attachments']['with_deal']}");
+
+                // Teams
+                $command->info("\nTeams:");
+                $command->info("- Total: {$stats['teams']['total']}");
+
+                // Invoices
+                $command->info("\nInvoices:");
+                $command->info("- Total: {$stats['invoices']['total']}");
+                $command->info("- With Company: {$stats['invoices']['with_company']}");
+                $command->info("- With Creator: {$stats['invoices']['with_creator']}");
+                $command->info("- With Deal: {$stats['invoices']['with_deal']}");
+                $command->info("- With Contact Entry: {$stats['invoices']['with_contact_entry']}");
+                $command->info("- With Subsidiary: {$stats['invoices']['with_subsidiary']}");
+                $command->info("- With Tax Rate: {$stats['invoices']['with_tax_rate']}");
+                $command->info("- With Document Type: {$stats['invoices']['with_document_type']}");
+                $command->info("- With Document Style: {$stats['invoices']['with_document_style']}");
+                $command->info("- With Attachment: {$stats['invoices']['with_attachment']}");
             }
 
             return true;
@@ -244,91 +376,8 @@ class ValidateDataIntegrity extends AbstractAction
             if ($command instanceof Command) {
                 $command->error('Error validating data integrity: ' . $e->getMessage());
             }
+            Log::error("Error validating data integrity: " . $e->getMessage());
             return false;
-        }
-    }
-
-    private function validateRelationships(Command $command): void
-    {
-        // Document Style relationships
-        $documentStylesWithoutAttachment = ProductiveDocumentStyle::whereDoesntHave('attachment')->whereNotNull('attachment_id')->count();
-        if ($documentStylesWithoutAttachment > 0) {
-            $command->warn("Found {$documentStylesWithoutAttachment} document styles with invalid attachment relationships");
-        }
-
-        // Tax Rate relationships
-        $taxRatesWithoutSubsidiary = ProductiveTaxRate::whereDoesntHave('subsidiary')->whereNotNull('subsidiary_id')->count();
-        if ($taxRatesWithoutSubsidiary > 0) {
-            $command->warn("Found {$taxRatesWithoutSubsidiary} tax rates with invalid subsidiary relationships");
-        }
-
-        // Subsidiary relationships
-        $subsidiariesWithInvalidBillFrom = ProductiveSubsidiary::whereDoesntHave('contactEntry')->whereNotNull('contact_entry_id')->count();
-        if ($subsidiariesWithInvalidBillFrom > 0) {
-            $command->warn("Found {$subsidiariesWithInvalidBillFrom} subsidiaries with invalid bill_from relationships");
-        }
-
-        $subsidiariesWithInvalidCustomDomain = ProductiveSubsidiary::whereDoesntHave('customDomain')->whereNotNull('custom_domain_id')->count();
-        if ($subsidiariesWithInvalidCustomDomain > 0) {
-            $command->warn("Found {$subsidiariesWithInvalidCustomDomain} subsidiaries with invalid custom_domain relationships");
-        }
-
-        $subsidiariesWithInvalidTaxRate = ProductiveSubsidiary::whereDoesntHave('defaultTaxRate')->whereNotNull('default_tax_rate_id')->count();
-        if ($subsidiariesWithInvalidTaxRate > 0) {
-            $command->warn("Found {$subsidiariesWithInvalidTaxRate} subsidiaries with invalid tax_rate relationships");
-        }
-
-        $subsidiariesWithInvalidIntegration = ProductiveSubsidiary::whereDoesntHave('integration')->whereNotNull('integration_id')->count();
-        if ($subsidiariesWithInvalidIntegration > 0) {
-            $command->warn("Found {$subsidiariesWithInvalidIntegration} subsidiaries with invalid integration relationships");
-        }
-
-        // Projects with company relationships
-        $projectsWithoutCompany = ProductiveProject::whereDoesntHave('company')->count();
-        if ($projectsWithoutCompany > 0) {
-            $command->warn("Found {$projectsWithoutCompany} projects without company relationships");
-        }
-
-        // Document Types with subsidiary relationships
-        $documentTypesWithoutSubsidiary = ProductiveDocumentType::whereDoesntHave('subsidiary')->count();
-        if ($documentTypesWithoutSubsidiary > 0) {
-            $command->warn("Found {$documentTypesWithoutSubsidiary} document types without subsidiary relationships");
-        }
-
-        // Contact Entries with company relationships
-        $contactEntriesWithoutCompany = ProductiveContactEntry::whereDoesntHave('company')->count();
-        if ($contactEntriesWithoutCompany > 0) {
-            $command->warn("Found {$contactEntriesWithoutCompany} contact entries without company relationships");
-        }
-
-        // Contact Entries with person relationships
-        $contactEntriesWithoutPerson = ProductiveContactEntry::whereDoesntHave('person')->count();
-        if ($contactEntriesWithoutPerson > 0) {
-            $command->warn("Found {$contactEntriesWithoutPerson} contact entries without person relationships");
-        }
-
-        // Deals with company relationships
-        $dealsWithoutCompany = ProductiveDeal::whereDoesntHave('company')->count();
-        if ($dealsWithoutCompany > 0) {
-            $command->warn("Found {$dealsWithoutCompany} deals without company relationships");
-        }
-
-        // Deals with project relationships
-        $dealsWithoutProject = ProductiveDeal::whereDoesntHave('project')->count();
-        if ($dealsWithoutProject > 0) {
-            $command->warn("Found {$dealsWithoutProject} deals without project relationships");
-        }
-
-        // Deals with lost reason relationships
-        $dealsWithoutLostReason = ProductiveDeal::whereDoesntHave('lostReason')->whereNotNull('lost_reason_id')->count();
-        if ($dealsWithoutLostReason > 0) {
-            $command->warn("Found {$dealsWithoutLostReason} deals with invalid lost reason relationships");
-        }
-
-        // Contracts with deal relationships
-        $contractsWithoutDeal = ProductiveContract::whereDoesntHave('deal')->whereNotNull('deal_id')->count();
-        if ($contractsWithoutDeal > 0) {
-            $command->warn("Found {$contractsWithoutDeal} contracts with invalid deal relationships");
         }
     }
 }

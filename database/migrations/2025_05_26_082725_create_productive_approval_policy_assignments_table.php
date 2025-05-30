@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('productive_apas', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('approval_policy_assignments');
             // Core attributes
             $table->string('target_type')->default('person');
             // Relationships
-            $table->foreignId('person_id')->nullable();
+            $table->string('person_id')->nullable();
             $table->string('deal_id')->nullable();
-            $table->foreignId('approval_policy_id')->nullable();
+            $table->string('approval_policy_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

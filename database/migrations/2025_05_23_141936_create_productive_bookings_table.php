@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_bookings', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('bookings'); // type of booking, e.g., 'booking', 'time_entry', etc.
             // Core attributes
             $table->float('hours')->nullable();
@@ -41,19 +41,18 @@ return new class extends Migration
             $table->string('external_id')->nullable();
             $table->timestamp('last_activity_at_api')->nullable();
             $table->string('stage_type')->nullable();
-            // Relationships - using foreign IDs without constraints to avoid circular dependencies
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('service_id')->nullable();
-            $table->foreignId('event_id')->nullable();
-            $table->foreignId('person_id')->nullable();
-            $table->foreignId('creator_id')->nullable();
-            $table->foreignId('updater_id')->nullable();
-            $table->foreignId('approver_id')->nullable();
-            $table->foreignId('rejecter_id')->nullable();
-            $table->foreignId('canceler_id')->nullable();
-            $table->foreignId('origin_id')->nullable();
+            // Relationships
+            $table->string('service_id')->nullable();
+            $table->string('event_id')->nullable();
+            $table->string('person_id')->nullable();
+            $table->string('creator_id')->nullable();
+            $table->string('updater_id')->nullable();
+            $table->string('approver_id')->nullable();
+            $table->string('rejecter_id')->nullable();
+            $table->string('canceler_id')->nullable();
+            $table->string('origin_id')->nullable();
             $table->json('approval_statuses')->nullable();
-            $table->foreignId('attachment_id')->nullable();
+            $table->string('attachment_id')->nullable();
             // Arrays
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

@@ -18,18 +18,36 @@ class ProductivePipeline extends Model
     public $timestamps = false; // Disable Laravel timestamps
 
     protected $fillable = [
+        // Base data
         'id',
         'type',
+        // Attributes
         'name',
+        'created_at_api',
+        'updated_at_api',
+        'position',
+        'icon_id',
+        'pipeline_type_id',
+        // Relationships
+        'creator_id',
+        'updater_id',
     ];
 
-    public function dealStatuses(): HasMany
+    protected $casts = [
+        'created_at_api' => 'timestamp',
+        'updated_at_api' => 'timestamp',
+        'position' => 'integer',
+        'icon_id' => 'integer',
+        'pipeline_type_id' => 'integer',
+    ];
+
+    public function creator(): BelongsTo
     {
-        return $this->hasMany(ProductiveDealStatus::class, 'pipeline_id');
+        return $this->belongsTo(ProductivePeople::class, 'creator_id');
     }
 
-    public function deals(): HasMany
+    public function updater(): BelongsTo
     {
-        return $this->hasMany(ProductiveDeal::class, 'pipeline_id');
+        return $this->belongsTo(ProductivePeople::class, 'updater_id');
     }
 }

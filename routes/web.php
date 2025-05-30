@@ -42,6 +42,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/sync/status', [ProductiveSyncController::class, 'status'])->name('productive.sync.status');
         Route::post('/sync', [ProductiveSyncController::class, 'sync'])->name('productive.sync');
     });
+
+    // Fallback route for Inertia
+    Route::fallback(function () {
+        return Inertia::render('errors/404', ['status' => 404]);
+    });
 });
 
 require __DIR__.'/settings.php';

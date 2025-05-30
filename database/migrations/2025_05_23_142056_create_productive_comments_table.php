@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_comments', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('comments'); // type of comment, e.g., 'text', 'image', etc.
             // Core attributes
             $table->text('body');
@@ -27,18 +27,17 @@ return new class extends Migration
             $table->json('reactions')->nullable();
             $table->timestamp('updated_at_api')->nullable();
             $table->integer('version_number')->nullable();
-            // Foreign keys without constraints - we'll add constraints in a separate migration
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('company_id')->nullable();
-            $table->foreignId('creator_id')->nullable();
+            
+            $table->string('company_id')->nullable();
+            $table->string('creator_id')->nullable();
             $table->string('deal_id')->nullable();
-            $table->foreignId('discussion_id')->nullable();
-            $table->foreignId('invoice_id')->nullable();
-            $table->foreignId('person_id')->nullable();
-            $table->foreignId('pinned_by_id')->nullable();
-            $table->foreignId('task_id')->nullable();
-            $table->foreignId('purchase_order_id')->nullable();
-            $table->foreignId('attachment_id')->nullable();
+            $table->string('discussion_id')->nullable();
+            $table->string('invoice_id')->nullable();
+            $table->string('person_id')->nullable();
+            $table->string('pinned_by_id')->nullable();
+            $table->string('task_id')->nullable();
+            $table->string('purchase_order_id')->nullable();
+            $table->string('attachment_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

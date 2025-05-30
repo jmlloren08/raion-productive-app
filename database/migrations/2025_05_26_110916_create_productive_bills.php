@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_bills', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->id('id')->primary();
             $table->string('type')->default('bills'); // type of bill, e.g., 'invoice', 'receipt', etc.
             // Core attributes
             $table->date('date')->nullable();
@@ -31,11 +31,10 @@ return new class extends Migration
             $table->decimal('total_cost_default')->nullable();
             $table->decimal('total_cost_normalized')->nullable();
 
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('purchase_order_id')->nullable();
-            $table->foreignId('creator_id')->nullable();
-            $table->foreignId('deal_id')->nullable();
-            $table->foreignId('attachment_id')->nullable();
+            $table->string('purchase_order_id')->nullable();
+            $table->string('creator_id')->nullable();
+            $table->string('deal_id')->nullable();
+            $table->string('attachment_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes();
