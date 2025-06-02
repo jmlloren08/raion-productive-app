@@ -119,6 +119,12 @@ class StoreProject extends AbstractAction
      */
     protected function validateRequiredFields(array $attributes, string $projectId, ?Command $command): void
     {
+
+        // Skip validation if no required fields are defined
+        if (empty($this->requiredFields)) {
+            return;
+        }
+        // Check for missing required fields
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
             if (!isset($attributes[$field])) {

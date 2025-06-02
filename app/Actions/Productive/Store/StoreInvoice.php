@@ -6,12 +6,9 @@ use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveCompany;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductivePeople;
-use App\Models\ProductiveDeal;
 use App\Models\ProductiveContactEntry;
 use App\Models\ProductiveSubsidiary;
-use App\Models\ProductiveTaxRate;
 use App\Models\ProductiveDocumentType;
-use App\Models\ProductiveDocumentStyle;
 use App\Models\ProductiveAttachment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -24,23 +21,23 @@ class StoreInvoice extends AbstractAction
      * Required fields that must be present in the invoice data
      */
     protected array $requiredFields = [
-        'number',
-        'status'
+        // No required fields / all nullable
     ];
 
     /**
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
+        'bill_to_id' => ProductiveContactEntry::class,
+        'bill_from_id' => ProductiveContactEntry::class,
         'company_id' => ProductiveCompany::class,
-        'creator_id' => ProductivePeople::class,
-        'deal_id' => ProductiveDeal::class,
-        'contact_entry_id' => ProductiveContactEntry::class,
-        'subsidiary_id' => ProductiveSubsidiary::class,
-        'tax_rate_id' => ProductiveTaxRate::class,
         'document_type_id' => ProductiveDocumentType::class,
-        'document_style_id' => ProductiveDocumentStyle::class,
-        'attachment_id' => ProductiveAttachment::class
+        'creator_id' => ProductivePeople::class,
+        'subsidiary_id' => ProductiveSubsidiary::class,
+        'parent_invoice_id' => ProductiveInvoice::class,
+        'issuer_id' => ProductivePeople::class,
+        'invoice_attribution_id' => ProductiveInvoice::class,
+        'attachment_id' => ProductiveAttachment::class,
     ];
 
     /**
@@ -131,6 +128,11 @@ class StoreInvoice extends AbstractAction
      */
     protected function validateRequiredFields(array $attributes, string $invoiceId, ?Command $command): void
     {
+        // Skip validation if no required fields are defined
+        if (empty($this->requiredFields)) {
+            return;
+        }
+        // Check for missing required fields
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
             if (!isset($attributes[$field])) {
@@ -154,16 +156,15 @@ class StoreInvoice extends AbstractAction
      */
     protected function handleJsonFields(array &$data): void
     {
-        $jsonFields = [
-            'preferences',
+        $arrayFields = [
+            'tag_list',
             'custom_fields',
-            'line_items',
-            'totals',
-            'payment_terms',
-            'payment_reminder_sequence'
+            'creation_options',
+            'custom_field_people',
+            'custom_field_attachments',
         ];
 
-        foreach ($jsonFields as $field) {
+        foreach ($arrayFields as $field) {
             if (isset($data[$field])) {
                 if (is_array($data[$field])) {
                     $data[$field] = json_encode($data[$field]);
@@ -184,15 +185,16 @@ class StoreInvoice extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
+            'bill_to' => 'bill_to_id',
+            'bill_from' => 'bill_from_id',
             'company' => 'company_id',
-            'creator' => 'creator_id',
-            'deal' => 'deal_id',
-            'contact_entry' => 'contact_entry_id',
-            'subsidiary' => 'subsidiary_id',
-            'tax_rate' => 'tax_rate_id',
             'document_type' => 'document_type_id',
-            'document_style' => 'document_style_id',
-            'attachment' => 'attachment_id'
+            'creator' => 'creator_id',
+            'subsidiary' => 'subsidiary_id',
+            'parent_invoice' => 'parent_invoice_id',
+            'issuer' => 'issuer_id',
+            'invoice_attributions' => 'invoice_attribution_id',
+            'attachment' => 'attachment_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -233,34 +235,85 @@ class StoreInvoice extends AbstractAction
     protected function validateDataTypes(array $data): void
     {
         $rules = [
-            'number' => 'required|string',
-            'status' => 'required|string',
-            'type' => 'required|string',
-            'created_at' => 'required|date',
-            'updated_at' => 'required|date',
-            'due_date' => 'nullable|date',
-            'issue_date' => 'nullable|date',
-            'paid_at' => 'nullable|date',
-            'currency' => 'required|string',
+            'number' => 'nullable|string',
+            'subject' => 'nullable|string',
+            'invoiced_on' => 'nullable|date',
+            'sent_on' => 'nullable|date',
+            'pay_on' => 'nullable|date',
+            'delivery_on' => 'nullable|date',
+            'paid_on' => 'nullable|date',
+            'finalized_on' => 'nullable|date',
+            'discount' => 'nullable|numeric',
+            'tax1_name' => 'nullable|string',
+            'tax1_value' => 'nullable|numeric',
+            'tax2_name' => 'nullable|string',
+            'tax2_value' => 'nullable|numeric',
+            'deleted_at_api' => 'nullable|date',
+            'note' => 'nullable|string',
+            'exported' => 'nullable|boolean',
+            'exported_at' => 'nullable|date',
+            'export_integration_type_id' => 'nullable|integer',
+            'export_id' => 'nullable|string',
+            'export_invoice_url' => 'nullable|string',
+            'company_reference_id' => 'nullable|string',
+            'note_interpolated' => 'nullable|string',
+            'email_key' => 'nullable|string',
+            'purchase_order_number' => 'nullable|string',
+            'created_at_api' => 'nullable|date',
             'exchange_rate' => 'nullable|numeric',
-            'total_amount' => 'required|numeric',
-            'total_amount_in_organization_currency' => 'required|numeric',
-            'preferences' => 'nullable|json',
-            'custom_fields' => 'nullable|json',
-            'line_items' => 'nullable|json',
-            'totals' => 'nullable|json',
-            'payment_terms' => 'nullable|json',
-            'payment_reminder_sequence' => 'nullable|json',
-            
+            'exchange_date' => 'nullable|date',
+            'updated_at_api' => 'nullable|date',
+            'sample_data' => 'nullable|boolean',
+            'pay_on_relative' => 'nullable|boolean',
+            'invoice_type_id' => 'nullable|integer',
+            'credited' => 'nullable|boolean',
+            'line_item_tax' => 'nullable|boolean',
+            'last_activity_at' => 'nullable|date',
+            'payment_terms' => 'nullable|integer',
+            'currency' => 'nullable|string',
+            'currency_default' => 'nullable|string',
+            'currency_normalized' => 'nullable|string',
+            'amount' => 'nullable|numeric',
+            'amount_default' => 'nullable|numeric',
+            'amount_normalized' => 'nullable|numeric',
+            'amount_tax' => 'nullable|numeric',
+            'amount_tax_default' => 'nullable|numeric',
+            'amount_tax_normalized' => 'nullable|numeric',
+            'amount_with_tax' => 'nullable|numeric',
+            'amount_with_tax_default' => 'nullable|numeric',
+            'amount_with_tax_normalized' => 'nullable|numeric',
+            'amount_paid' => 'nullable|numeric',
+            'amount_paid_default' => 'nullable|numeric',
+            'amount_paid_normalized' => 'nullable|numeric',
+            'amount_written_off' => 'nullable|numeric',
+            'amount_written_off_default' => 'nullable|numeric',
+            'amount_written_off_normalized' => 'nullable|numeric',
+            'amount_unpaid' => 'nullable|numeric',
+            'amount_unpaid_default' => 'nullable|numeric',
+            'amount_unpaid_normalized' => 'nullable|numeric',
+            'amount_credited' => 'nullable|numeric',
+            'amount_credited_default' => 'nullable|numeric',
+            'amount_credited_normalized' => 'nullable|numeric',
+            'amount_credited_with_tax' => 'nullable|numeric',
+            'amount_credited_with_tax_default' => 'nullable|numeric',
+            'amount_credited_with_tax_normalized' => 'nullable|numeric',
+            // Relationships
+            'bill_to_id' => 'nullable|string',
+            'bill_from_id' => 'nullable|string',
             'company_id' => 'nullable|string',
-            'creator_id' => 'nullable|string',
-            'deal_id' => 'nullable|string',
-            'contact_entry_id' => 'nullable|string',
-            'subsidiary_id' => 'nullable|string',
-            'tax_rate_id' => 'nullable|string',
             'document_type_id' => 'nullable|string',
-            'document_style_id' => 'nullable|string',
-            'attachment_id' => 'nullable|string'
+            'creator_id' => 'nullable|string',
+            'subsidiary_id' => 'nullable|string',
+            'parent_invoice_id' => 'nullable|string',
+            'issuer_id' => 'nullable|string',
+            'invoice_attribution_id' => 'nullable|string',
+            'attachment_id' => 'nullable|string',
+            // JSON fields - allow both array and string (for JSON)
+            'tag_list' => 'nullable|string',
+            'custom_fields' => 'nullable|string',
+            'creation_options' => 'nullable|string',
+            'custom_field_people' => 'nullable|string',
+            'custom_field_attachments' => 'nullable|string',
         ];
 
         $validator = Validator::make($data, $rules);

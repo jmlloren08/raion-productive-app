@@ -25,6 +25,7 @@ use App\Actions\Productive\Fetch\FetchBills;
 use App\Actions\Productive\Fetch\FetchTeams;
 use App\Actions\Productive\Fetch\FetchEmails;
 use App\Actions\Productive\Fetch\FetchInvoices;
+use App\Actions\Productive\Fetch\FetchInvoiceAttributions;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
 use App\Models\ProductiveContactEntry;
@@ -58,7 +59,8 @@ class SyncProductiveDataRefactored extends Command
         'bills' => [],
         'teams' => [],
         'emails' => [],
-        'invoices' => []
+        'invoices' => [],
+        'invoice_attributions' => []
     ];
 
     public function __construct(
@@ -85,6 +87,7 @@ class SyncProductiveDataRefactored extends Command
         private FetchTeams $fetchTeamsAction,
         private FetchEmails $fetchEmailsAction,
         private FetchInvoices $fetchInvoicesAction,
+        private FetchInvoiceAttributions $fetchInvoiceAttributionsAction,
         private StoreData $storeDataAction,
         private ValidateDataIntegrity $validateDataIntegrityAction
     ) {
@@ -392,6 +395,19 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['invoices'] = $invoices['invoices'];
 
+            // Fetch invoice attributions
+            $invoiceAttributions = $this->fetchInvoiceAttributionsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$invoiceAttributions['success']) {
+                $this->error('Failed to fetch invoice attributions: ' . ($invoiceAttributions['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['invoice_attributions'] = $invoiceAttributions['invoice_attributions'];
+
             // Store data in MySQL
             $this->info('Storing data in database...');
             $storageSuccess = $this->storeDataAction->handle([
@@ -435,6 +451,7 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Teams synced: ' . count($this->data['teams']));
             $this->info('Emails synced: ' . count($this->data['emails']));
             $this->info('Invoices synced: ' . count($this->data['invoices']));
+            $this->info('Invoice Attributions synced: ' . count($this->data['invoice_attributions']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 

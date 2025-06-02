@@ -19,13 +19,14 @@ use App\Models\ProductiveLostReason;
 use App\Models\ProductiveDealStatus;
 use App\Models\ProductiveContract;
 use App\Models\ProductivePurchaseOrder;
-use App\Models\ProductiveApprovalPolicyAssignment;
 use App\Models\ProductiveApprovalPolicy;
 use App\Models\ProductivePipeline;
 use App\Models\ProductiveAttachment;
 use App\Models\ProductiveBill;
 use App\Models\ProductiveTeam;
 use App\Models\ProductiveEmail;
+use App\Models\ProductiveInvoice;
+use App\Models\ProductiveInvoiceAttribution;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -74,6 +75,8 @@ class GetSyncStatus extends AbstractAction
                 'bills_count' => ProductiveBill::count(),
                 'attachments_count' => ProductiveAttachment::count(),
                 'teams_count' => ProductiveTeam::count(),
+                'invoices_count' => ProductiveInvoice::count(),
+                'invoice_attributions_count' => ProductiveInvoiceAttribution::count(),
             ];
 
             // Get detailed relationship stats

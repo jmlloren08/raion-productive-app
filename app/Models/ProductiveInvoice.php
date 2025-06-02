@@ -102,6 +102,9 @@ class ProductiveInvoice extends Model
     ];
 
     protected $casts = [
+        'tag_list' => 'array',
+        'custom_fields' => 'array',
+        'creation_options' => 'array',
         'custom_field_people' => 'array',
         'custom_field_attachments' => 'array',
     ];

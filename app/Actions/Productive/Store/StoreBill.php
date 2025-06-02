@@ -5,12 +5,6 @@ namespace App\Actions\Productive\Store;
 use App\Actions\Productive\AbstractAction;
 use App\Models\ProductivePeople;
 use App\Models\ProductiveBill;
-use App\Models\ProductiveCompany;
-use App\Models\ProductiveContactEntry;
-use App\Models\ProductiveSubsidiary;
-use App\Models\ProductiveTaxRate;
-use App\Models\ProductiveDocumentType;
-use App\Models\ProductiveDocumentStyle;
 use App\Models\ProductiveAttachment;
 use App\Models\ProductiveDeal;
 use App\Models\ProductivePurchaseOrder;
@@ -25,7 +19,7 @@ class StoreBill extends AbstractAction
      * Required fields that must be present in the bill data
      */
     protected array $requiredFields = [
-        '',
+        // No required fields / all nullable
     ];
 
     /**
@@ -123,6 +117,10 @@ class StoreBill extends AbstractAction
      */
     protected function validateRequiredFields(array $attributes, string $billId, ?Command $command): void
     {
+        // Skip validation if no required fields are defined
+        if (empty($this->requiredFields)) {
+            return;
+        }
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
             if (!isset($attributes[$field])) {

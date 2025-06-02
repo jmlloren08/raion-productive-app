@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type')->default('invoices'); // type of invoice, e.g., 'invoice', 'credit_note', etc.
             // Core attributes
             $table->string('number')->nullable();
-            $table->string('subject')->nullable();
+            $table->text('subject')->nullable();
             $table->date('invoiced_on')->nullable();
             $table->date('sent_on')->nullable();
             $table->date('pay_on')->nullable();
@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('tax2_name')->nullable();
             $table->decimal('tax2_value', 10, 2)->nullable();
             $table->timestamp('deleted_at_api')->nullable();
-            $table->string('tag_list')->nullable();
+            $table->json('tag_list')->nullable();
             $table->text('note')->nullable();
             $table->boolean('exported')->default(false);
             $table->timestamp('exported_at')->nullable();
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->timestamp('created_at_api')->nullable();
             $table->decimal('exchange_rate', 10, 2)->nullable();
             $table->date('exchange_date')->nullable();
-            $table->text('custom_fields')->nullable();
+            $table->json('custom_fields')->nullable();
             $table->timestamp('updated_at_api')->nullable();
             $table->boolean('sample_data')->default(false);
             $table->boolean('pay_on_relative')->default(false);

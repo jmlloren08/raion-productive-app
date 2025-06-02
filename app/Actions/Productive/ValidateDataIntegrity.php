@@ -24,6 +24,7 @@ use App\Models\ProductiveBill;
 use App\Models\ProductiveTeam;
 use App\Models\ProductiveEmail;
 use App\Models\ProductiveInvoice;
+use App\Models\ProductiveInvoiceAttribution;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -184,15 +185,20 @@ class ValidateDataIntegrity extends AbstractAction
                 ],
                 'invoices' => [
                     'total' => ProductiveInvoice::count(),
+                    'with_bill_to' => ProductiveInvoice::whereNotNull('bill_to_id')->count(),
+                    'with_bill_from' => ProductiveInvoice::whereNotNull('bill_from_id')->count(),
                     'with_company' => ProductiveInvoice::whereNotNull('company_id')->count(),
-                    'with_creator' => ProductiveInvoice::whereNotNull('creator_id')->count(),
-                    'with_deal' => ProductiveInvoice::whereNotNull('deal_id')->count(),
-                    'with_contact_entry' => ProductiveInvoice::whereNotNull('contact_entry_id')->count(),
-                    'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
-                    'with_tax_rate' => ProductiveInvoice::whereNotNull('tax_rate_id')->count(),
                     'with_document_type' => ProductiveInvoice::whereNotNull('document_type_id')->count(),
-                    'with_document_style' => ProductiveInvoice::whereNotNull('document_style_id')->count(),
-                    'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count()
+                    'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
+                    'with_parent_invoice' => ProductiveInvoice::whereNotNull('parent_invoice_id')->count(),
+                    'with_issuer' => ProductiveInvoice::whereNotNull('issuer_id')->count(),
+                    'with_invoice_attribution' => ProductiveInvoice::whereNotNull('invoice_attribution_id')->count(),
+                    'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count(),
+                ],
+                'invoice_attributions' => [
+                    'total' => ProductiveInvoiceAttribution::count(),
+                    'with_invoice' => ProductiveInvoiceAttribution::whereNotNull('invoice_id')->count(),
+                    'with_budget' => ProductiveInvoiceAttribution::whereNotNull('budget_id')->count(),
                 ],
             ];
 
@@ -360,15 +366,21 @@ class ValidateDataIntegrity extends AbstractAction
                 // Invoices
                 $command->info("\nInvoices:");
                 $command->info("- Total: {$stats['invoices']['total']}");
+                $command->info("- With Bill To: {$stats['invoices']['with_bill_to']}");
+                $command->info("- With Bill From: {$stats['invoices']['with_bill_from']}");
                 $command->info("- With Company: {$stats['invoices']['with_company']}");
-                $command->info("- With Creator: {$stats['invoices']['with_creator']}");
-                $command->info("- With Deal: {$stats['invoices']['with_deal']}");
-                $command->info("- With Contact Entry: {$stats['invoices']['with_contact_entry']}");
-                $command->info("- With Subsidiary: {$stats['invoices']['with_subsidiary']}");
-                $command->info("- With Tax Rate: {$stats['invoices']['with_tax_rate']}");
                 $command->info("- With Document Type: {$stats['invoices']['with_document_type']}");
-                $command->info("- With Document Style: {$stats['invoices']['with_document_style']}");
+                $command->info("- With Subsidiary: {$stats['invoices']['with_subsidiary']}");
+                $command->info("- With Parent Invoice: {$stats['invoices']['with_parent_invoice']}");
+                $command->info("- With Issuer: {$stats['invoices']['with_issuer']}");
+                $command->info("- With Invoice Attribution: {$stats['invoices']['with_invoice_attribution']}");
                 $command->info("- With Attachment: {$stats['invoices']['with_attachment']}");
+
+                // Invoice Attributions
+                $command->info("\nInvoice Attributions:");
+                $command->info("- Total: {$stats['invoice_attributions']['total']}");
+                $command->info("- With Invoice: {$stats['invoice_attributions']['with_invoice']}");
+                $command->info("- With Budget: {$stats['invoice_attributions']['with_budget']}");
             }
 
             return true;

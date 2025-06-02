@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type')->default('invoice_attributions');
             // Core attributes
             $table->date('date_from')->nullable();
-            $table->date('date_to');
+            $table->date('date_to')->nullable();
             $table->integer('amount');
             $table->integer('amount_default');
             $table->integer('amount_normalized');

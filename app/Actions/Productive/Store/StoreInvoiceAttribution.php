@@ -3,32 +3,39 @@
 namespace App\Actions\Productive\Store;
 
 use App\Actions\Productive\AbstractAction;
-use App\Models\ProductivePipeline;
+use App\Models\ProductiveDeal;
+use App\Models\ProductiveInvoice;
+use App\Models\ProductiveInvoiceAttribution;
 use App\Models\ProductivePeople;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class StorePipeline extends AbstractAction
+class StoreInvoiceAttribution extends AbstractAction
 {
     /**
-     * Required fields that must be present in the pipeline data
+     * Required fields that must be present in the invoice attribution data
      */
     protected array $requiredFields = [
-        'name',
+        'amount',
+        'amount_default',
+        'amount_normalized',
+        'currency',
+        'currency_default',
+        'currency_normalized',
     ];
 
     /**
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
-        'creator_id' => ProductivePeople::class,
-        'updater_id' => ProductivePeople::class,
+        'invoice_id' => ProductiveInvoice::class,
+        'budget_id' => ProductiveDeal::class,
     ];
 
     /**
-     * Store a pipeline in the database
+     * Store an invoice attribution in the database
      *
      * @param array $parameters
      * @return bool
@@ -36,38 +43,38 @@ class StorePipeline extends AbstractAction
      */
     public function handle(array $parameters = []): bool
     {
-        $pipelineData = $parameters['pipelineData'] ?? null;
+        $invoiceAttributionData = $parameters['invoiceAttributionData'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        if (!$pipelineData) {
-            throw new \Exception('Pipeline data is required');
+        if (!$invoiceAttributionData) {
+            throw new \Exception('Invoice attribution data is required');
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info("Processing pipeline: {$pipelineData['id']}");
+                $command->info("Processing invoice attribution: {$invoiceAttributionData['id']}");
             }
 
             // Validate basic data structure
-            if (!isset($pipelineData['id'])) {
+            if (!isset($invoiceAttributionData['id'])) {
                 throw new \Exception("Missing required field 'id' in root data object");
             }
 
-            $attributes = $pipelineData['attributes'] ?? [];
-            $relationships = $pipelineData['relationships'] ?? [];
+            $attributes = $invoiceAttributionData['attributes'] ?? [];
+            $relationships = $invoiceAttributionData['relationships'] ?? [];
 
             // Add type from root level if not in attributes
-            if (!isset($attributes['type']) && isset($pipelineData['type'])) {
-                $attributes['type'] = $pipelineData['type'];
+            if (!isset($attributes['type']) && isset($invoiceAttributionData['type'])) {
+                $attributes['type'] = $invoiceAttributionData['type'];
             }
 
             // Validate required fields
-            $this->validateRequiredFields($attributes, $pipelineData['id'], $command);
+            $this->validateRequiredFields($attributes, $invoiceAttributionData['id'], $command);
 
             // Prepare base data
             $data = [
-                'id' => $pipelineData['id'],
-                'type' => $attributes['type'] ?? $pipelineData['type'] ?? 'pipelines',
+                'id' => $invoiceAttributionData['id'],
+                'type' => $attributes['type'] ?? $invoiceAttributionData['type'] ?? 'invoice_attributions',
             ];
 
             // Add all attributes with safe fallbacks
@@ -76,27 +83,28 @@ class StorePipeline extends AbstractAction
             }
 
             // Handle foreign key relationships
-            $this->handleForeignKeys($relationships, $data, $attributes['name'] ?? 'Unknown Pipeline', $command);
+            $this->handleForeignKeys($relationships, $data, $attributes['date_from'] ?? 'Unknown Invoice Attribution', $command);
 
             // Validate data types
             $this->validateDataTypes($data);
 
-            // Create or update pipeline
-            ProductivePipeline::updateOrCreate(
-                ['id' => $pipelineData['id']],
+            // Create or update invoice attribution
+            ProductiveInvoiceAttribution::updateOrCreate(
+                ['id' => $invoiceAttributionData['id']],
                 $data
             );
 
             if ($command instanceof Command) {
-                $command->info("Successfully stored pipeline: {$attributes['name']} (ID: {$pipelineData['id']})");
+                $command->info("Successfully stored invoice attribution: {$attributes['date_from']} (ID: {$invoiceAttributionData['id']})");
             }
 
             return true;
+
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Failed to store pipeline {$pipelineData['id']}: " . $e->getMessage());
+                $command->error("Failed to store invoice attribution {$invoiceAttributionData['id']}: " . $e->getMessage());
             }
-            Log::error("Failed to store pipeline {$pipelineData['id']}: " . $e->getMessage());
+            Log::error("Failed to store invoice attribution {$invoiceAttributionData['id']}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -105,12 +113,18 @@ class StorePipeline extends AbstractAction
      * Validate that all required fields are present
      *
      * @param array $attributes
-     * @param string $pipelineId
+     * @param string $invoiceAttributionId
      * @param Command|null $command
      * @throws \Exception
      */
-    protected function validateRequiredFields(array $attributes, string $pipelineId, ?Command $command): void
+    protected function validateRequiredFields(array $attributes, string $invoiceAttributionId, ?Command $command): void
     {
+        // Skip validation if no required fields are defined
+        if (empty($this->requiredFields)) {
+            return;
+        }
+
+        // Check for missing required fields
         $missingFields = [];
         foreach ($this->requiredFields as $field) {
             if (!isset($attributes[$field])) {
@@ -119,7 +133,7 @@ class StorePipeline extends AbstractAction
         }
 
         if (!empty($missingFields)) {
-            $message = "Required fields missing for pipeline {$pipelineId}: " . implode(', ', $missingFields);
+            $message = "Required fields missing for invoice attribution {$invoiceAttributionId}: " . implode(', ', $missingFields);
             if ($command) {
                 $command->error($message);
             }
@@ -132,15 +146,15 @@ class StorePipeline extends AbstractAction
      *
      * @param array $relationships
      * @param array &$data
-     * @param string $pipelineId
+     * @param string $invoiceAttributionId
      * @param Command|null $command
      */
-    protected function handleForeignKeys(array $relationships, array &$data, string $pipelineId, ?Command $command): void
+    protected function handleForeignKeys(array $relationships, array &$data, string $invoiceAttributionId, ?Command $command): void
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'creator' => 'creator_id',
-            'updater' => 'updater_id',
+            'invoice' => 'invoice_id',
+            'budget' => 'budget_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -155,7 +169,7 @@ class StorePipeline extends AbstractAction
 
                 if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
-                        $command->warn("Pipeline '{$pipelineId}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
+                        $command->warn("Invoice attribution '{$invoiceAttributionId}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
                     $data[$dbKey] = null;
                 } else {
@@ -181,15 +195,17 @@ class StorePipeline extends AbstractAction
     protected function validateDataTypes(array $data): void
     {
         $rules = [
-            'name' => 'required|string',
-            'created_at_api' => 'nullable|timestamp',
-            'updated_at_api' => 'nullable|timestamp',
-            'position' => 'required|integer',
-            'icon_id' => 'required|string',
-            'pipeline_type_id' => 'required|integer',
-
-            'creator_id' => 'nullable|string',
-            'updater_id' => 'nullable|string',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
+            'amount' => 'required|integer',
+            'amount_default' => 'required|integer',
+            'amount_normalized' => 'required|integer',
+            'currency' => 'required|string|max:3',
+            'currency_default' => 'required|string|max:3',
+            'currency_normalized' => 'required|string|max:3',
+            // Foreign key relationships
+            'invoice_id' => 'nullable|string',
+            'budget_id' => 'nullable|string',
         ];
 
         $validator = Validator::make($data, $rules);

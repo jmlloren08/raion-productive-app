@@ -26,8 +26,7 @@ use App\Models\ProductiveBill;
 use App\Models\ProductiveTeam;
 use App\Models\ProductiveEmail;
 use App\Models\ProductiveInvoice;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Models\ProductiveInvoiceAttribution;
 use Illuminate\Console\Command;
 
 class GetRelationshipStats extends AbstractAction
@@ -182,15 +181,21 @@ class GetRelationshipStats extends AbstractAction
                 ],
                 'invoices' => [
                     'total' => ProductiveInvoice::count(),
+                    'with_bill_to' => ProductiveInvoice::whereNotNull('bill_to_id')->count(),
+                    'with_bill_from' => ProductiveInvoice::whereNotNull('bill_from_id')->count(),
                     'with_company' => ProductiveInvoice::whereNotNull('company_id')->count(),
-                    'with_creator' => ProductiveInvoice::whereNotNull('creator_id')->count(),
-                    'with_deal' => ProductiveInvoice::whereNotNull('deal_id')->count(),
-                    'with_contact_entry' => ProductiveInvoice::whereNotNull('contact_entry_id')->count(),
-                    'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
-                    'with_tax_rate' => ProductiveInvoice::whereNotNull('tax_rate_id')->count(),
                     'with_document_type' => ProductiveInvoice::whereNotNull('document_type_id')->count(),
-                    'with_document_style' => ProductiveInvoice::whereNotNull('document_style_id')->count(),
-                    'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count()
+                    'with_creator' => ProductiveInvoice::whereNotNull('creator_id')->count(),
+                    'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
+                    'with_parent_invoice' => ProductiveInvoice::whereNotNull('parent_invoice_id')->count(),
+                    'with_issuer' => ProductiveInvoice::whereNotNull('issuer_id')->count(),
+                    'with_invoice_attribution' => ProductiveInvoice::whereNotNull('invoice_attribution_id')->count(),
+                    'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count(),
+                ],
+                'invoice_attributions' => [
+                    'total' => ProductiveInvoiceAttribution::count(),
+                    'with_invoice' => ProductiveInvoiceAttribution::whereNotNull('invoice_id')->count(),
+                    'with_budget' => ProductiveInvoiceAttribution::whereNotNull('budget_id')->count(),
                 ],
             ];
 
@@ -226,6 +231,7 @@ class GetRelationshipStats extends AbstractAction
                 'attachments' => $stats['attachments'],
                 'teams' => $stats['teams'],
                 'invoices' => $stats['invoices'],
+                'invoice_attributions' => $stats['invoice_attributions'],
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
@@ -257,6 +263,7 @@ class GetRelationshipStats extends AbstractAction
                 'attachments' => ['total' => ProductiveAttachment::count()],
                 'teams' => ['total' => ProductiveTeam::count()],
                 'invoices' => ['total' => ProductiveInvoice::count()],
+                'invoice_attributions' => ['total' => ProductiveInvoiceAttribution::count()],
             ];
         }
     }

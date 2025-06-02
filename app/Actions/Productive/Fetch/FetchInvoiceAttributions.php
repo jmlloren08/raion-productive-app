@@ -7,24 +7,16 @@ use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchInvoices extends AbstractAction
+class FetchInvoiceAttributions extends AbstractAction
 {
     /**
-     * Define include relationships for invoices
+     * Define include relationships for invoice attributions
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'bill_to',
-        'bill_from',
-        'company',
-        'document_type',
-        'creator',
-        'subsidiary',
-        'parent_invoice',
-        'issuer',
-        'invoice_attributions',
-        'attachment',
+        'invoice',
+        'budget',
     ];
 
     /**
@@ -33,21 +25,13 @@ class FetchInvoices extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['bill_to'],
-        ['bill_from'],
-        ['company'],
-        ['document_type'],
-        ['creator'],
-        ['subsidiary'],
-        ['parent_invoice'],
-        ['issuer'],
-        ['invoice_attributions'],
-        ['attachment'],
+        ['invoice'], 
+        ['budget'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch invoices from the Productive API
+     * Fetch invoice attributions from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -60,17 +44,17 @@ class FetchInvoices extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'invoices' => [],
+                'invoice_attributions' => [],
                 'error' => 'API client is required'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching invoices...');
+                $command->info('Fetching invoice attributions...');
             }
 
-            $allInvoices = [];
+            $allInvoiceAttributions = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -78,8 +62,8 @@ class FetchInvoices extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for invoices
-                    $response = $apiClient->get("invoices", [
+                    // Following Productive API docs for invoice attributions
+                    $response = $apiClient->get("invoice_attributions", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
@@ -88,7 +72,7 @@ class FetchInvoices extends AbstractAction
                     ])->throw();
 
                     if (!$response->successful()) {
-                        throw new \Exception('Failed to fetch invoices: ' . $response->body());
+                        throw new \Exception('Failed to fetch invoice attributions: ' . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -100,22 +84,22 @@ class FetchInvoices extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'invoices' => [],
+                            'invoice_attributions' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $invoices = $responseBody['data'];
+                    $invoiceAttributions = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $invoices = $processIncludedAction->handle([
+                    $invoiceAttributions = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $invoices,
+                        'resources' => $invoiceAttributions,
                         'command' => $command
                     ]);
 
-                    $allInvoices = array_merge($allInvoices, $invoices);
+                    $allInvoiceAttributions = array_merge($allInvoiceAttributions, $invoiceAttributions);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -123,22 +107,22 @@ class FetchInvoices extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($invoices) < $pageSize) {
+                    if (count($invoiceAttributions) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching invoices page {$page}...");
+                            $command->info("Fetching invoice attributions page {$page}...");
                         }
                     }
 
                     // Log progress
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($invoices) . " invoices from page " . ($page - 1));
+                        $command->info("Fetched " . count($invoiceAttributions) . " invoice attributions from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch invoices page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch invoice attributions page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -156,55 +140,55 @@ class FetchInvoices extends AbstractAction
 
                     return [
                         'success' => false,
-                        'invoices' => [],
-                        'error' => 'Error fetching invoices page ' . $page . ': ' . $e->getMessage()
+                        'invoice_attributions' => [],
+                        'error' => 'Error fetching invoice attributions page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allInvoices) . ' invoices in total');
+                $command->info('Found ' . count($allInvoiceAttributions) . ' invoice attributions in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allInvoices);
-                $this->logRelationshipStats($relationshipStats, count($allInvoices), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allInvoiceAttributions);
+                $this->logRelationshipStats($relationshipStats, count($allInvoiceAttributions), $command);
             }
 
             return [
                 'success' => true,
-                'invoices' => $allInvoices
+                'invoice_attributions' => $allInvoiceAttributions
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in invoices fetch process: " . $e->getMessage());
+                $command->error("Error in invoice attributions fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in invoices fetch process: " . $e->getMessage());
+            Log::error("Error in invoice attributions fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'invoices' => [],
-                'error' => 'Error in invoices fetch process: ' . $e->getMessage()
+                'invoice_attributions' => [],
+                'error' => 'Error in invoice attributions fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for invoices
+     * Calculate relationship statistics for invoice attributions
      *
-     * @param array $invoices
+     * @param array $invoiceAttributions
      * @return array
      */
-    protected function calculateRelationshipStats(array $invoices): array
+    protected function calculateRelationshipStats(array $invoiceAttributions): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($invoices as $invoice) {
-            if (isset($invoice['relationships'])) {
+        foreach ($invoiceAttributions as $invoiceAttribution) {
+            if (isset($invoiceAttribution['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
                     if (
-                        isset($invoice['relationships'][$relationship]['data']['id']) ||
-                        (isset($invoice['relationships'][$relationship]['data']) && is_array($invoice['relationships'][$relationship]['data']))
+                        isset($invoiceAttribution['relationships'][$relationship]['data']['id']) ||
+                        (isset($invoiceAttribution['relationships'][$relationship]['data']) && is_array($invoiceAttribution['relationships'][$relationship]['data']))
                     ) {
                         $stats[$relationship]++;
                     }
@@ -219,16 +203,16 @@ class FetchInvoices extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalInvoices
+     * @param int $totalInvoiceAttributions
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalInvoices, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalInvoiceAttributions, Command $command): void
     {
-        if ($totalInvoices > 0) {
+        if ($totalInvoiceAttributions > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalInvoices) * 100, 2);
-                $command->info("Invoices with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalInvoiceAttributions) * 100, 2);
+                $command->info("Invoice Attributions with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

@@ -14,8 +14,8 @@ use App\Actions\Productive\Store\StorePeople;
 use App\Actions\Productive\Store\StoreProject;
 use App\Actions\Productive\Store\StoreSubsidiary;
 use App\Actions\Productive\Store\StoreTaxRate;
-use App\Actions\Productive\Store\StoreWorkflow;
 use App\Actions\Productive\Store\StorePurchaseOrder;
+use App\Actions\Productive\Store\StoreWorkflow;
 use App\Actions\Productive\Store\StoreApprovalPolicyAssignment;
 use App\Actions\Productive\Store\StoreApprovalPolicy;
 use App\Actions\Productive\Store\StorePipeline;
@@ -24,6 +24,7 @@ use App\Actions\Productive\Store\StoreBill;
 use App\Actions\Productive\Store\StoreTeam;
 use App\Actions\Productive\Store\StoreEmail;
 use App\Actions\Productive\Store\StoreInvoice;
+use App\Actions\Productive\Store\StoreInvoiceAttribution;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -51,7 +52,8 @@ class StoreData extends AbstractAction
         private StoreBill $storeBillAction,
         private StoreTeam $storeTeamAction,
         private StoreEmail $storeEmailAction,
-        private StoreInvoice $storeInvoiceAction
+        private StoreInvoice $storeInvoiceAction,
+        private StoreInvoiceAttribution $storeInvoiceAttributionAction
     ) {}
 
     /**
@@ -84,7 +86,8 @@ class StoreData extends AbstractAction
             'bills',
             'teams',
             'emails',
-            'invoices'
+            'invoices',
+            'invoice_attributions'
         ];
 
         $missingKeys = array_diff($requiredKeys, array_keys($data));
@@ -107,7 +110,7 @@ class StoreData extends AbstractAction
                 empty($data['approval_policy_assignments']) && empty($data['pipelines']) &&
                 empty($data['attachments']) && empty($data['bills']) &&
                 empty($data['teams']) && empty($data['emails']) &&
-                empty($data['invoices'])
+                empty($data['invoices']) && empty($data['invoice_attributions'])
             ) {
                 if ($command instanceof Command) {
                     $command->warn('No data fetched from Productive API. Skipping storage.');
@@ -699,6 +702,34 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Invoices: {$invoicesSuccess} stored successfully, {$invoicesError} failed");
+                }
+            }
+
+            // Store invoice attributions
+            if (!empty($data['invoice_attributions'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing invoice attributions...');
+                }
+
+                $invoiceAttributionsSuccess = 0;
+                $invoiceAttributionsError = 0;
+                foreach ($data['invoice_attributions'] as $invoiceAttributionData) {
+                    try {
+                        $this->storeInvoiceAttributionAction->handle([
+                            'invoiceAttributionData' => $invoiceAttributionData,
+                            'command' => $command
+                        ]);
+                        $invoiceAttributionsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store invoice attribution (ID: {$invoiceAttributionData['id']}): " . $e->getMessage());
+                        }
+                        $invoiceAttributionsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Invoice Attributions: {$invoiceAttributionsSuccess} stored successfully, {$invoiceAttributionsError} failed");
                 }
             }
 
