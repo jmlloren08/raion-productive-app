@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('date');
             $table->date('pay_on')->nullable();
             $table->date('paid_on')->nullable();
-            $table->integer('position')->default(0);
+            $table->integer('position')->nullable();
             $table->boolean('invoiced')->default(false);
             $table->boolean('approved')->default(false);
             $table->timestamp('approved_at')->nullable();

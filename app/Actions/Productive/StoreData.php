@@ -25,11 +25,32 @@ use App\Actions\Productive\Store\StoreTeam;
 use App\Actions\Productive\Store\StoreEmail;
 use App\Actions\Productive\Store\StoreInvoice;
 use App\Actions\Productive\Store\StoreInvoiceAttribution;
+// use App\Actions\Productive\Store\StoreActivity;
+use App\Actions\Productive\Store\StoreBoard;
+use App\Actions\Productive\Store\StoreBooking;
+use App\Actions\Productive\Store\StoreComment;
+use App\Actions\Productive\Store\StoreDiscussion;
+use App\Actions\Productive\Store\StoreEvent;
+use App\Actions\Productive\Store\StoreExpense;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class StoreData extends AbstractAction
 {
+    protected array $requiredKeys = [
+        'companies',
+        'people',
+        'projects',
+        'tasks',
+        'deals',
+        'boards',
+        'bookings',
+        'comments',
+        'discussions',
+        'events',
+        'expenses'
+    ];
+
     public function __construct(
         private StoreProject $storeProjectAction,
         private StoreCompany $storeCompanyAction,
@@ -53,7 +74,13 @@ class StoreData extends AbstractAction
         private StoreTeam $storeTeamAction,
         private StoreEmail $storeEmailAction,
         private StoreInvoice $storeInvoiceAction,
-        private StoreInvoiceAttribution $storeInvoiceAttributionAction
+        private StoreInvoiceAttribution $storeInvoiceAttributionAction,
+        private StoreBoard $storeBoardAction,
+        private StoreBooking $storeBookingAction,
+        private StoreComment $storeCommentAction,
+        private StoreDiscussion $storeDiscussionAction,
+        private StoreEvent $storeEventAction,
+        private StoreExpense $storeExpenseAction,
     ) {}
 
     /**
@@ -64,35 +91,24 @@ class StoreData extends AbstractAction
      */
     public function handle(array $parameters = []): bool
     {
-        $data = $parameters['data'] ?? [];
+        $data = $parameters['data'] ?? null;
         $command = $parameters['command'] ?? null;
 
-        if (empty($data)) {
-            throw new \Exception('No data provided to store');
+        if (!$data) {
+            throw new \Exception('Data is required');
         }
 
-        // Validate data structure
-        $requiredKeys = [
-            'projects',
-            'companies',
-            'subsidiaries',
-            'deals',
-            'people',
-            'purchase_orders',
-            'approval_policy_assignments',
-            'approval_policies',
-            'pipelines',
-            'attachments',
-            'bills',
-            'teams',
-            'emails',
-            'invoices',
-            'invoice_attributions'
-        ];
+        // Check if at least one of the required keys is present
+        $hasRequiredData = false;
+        foreach ($this->requiredKeys as $key) {
+            if (!empty($data[$key])) {
+                $hasRequiredData = true;
+                break;
+            }
+        }
 
-        $missingKeys = array_diff($requiredKeys, array_keys($data));
-        if (!empty($missingKeys)) {
-            throw new \Exception('Missing required data keys: ' . implode(', ', $missingKeys));
+        if (!$hasRequiredData) {
+            throw new \Exception('At least one of the following data types must be present: ' . implode(', ', $this->requiredKeys));
         }
 
         try {
@@ -110,7 +126,8 @@ class StoreData extends AbstractAction
                 empty($data['approval_policy_assignments']) && empty($data['pipelines']) &&
                 empty($data['attachments']) && empty($data['bills']) &&
                 empty($data['teams']) && empty($data['emails']) &&
-                empty($data['invoices']) && empty($data['invoice_attributions'])
+                empty($data['invoices']) && empty($data['invoice_attributions']) &&
+                empty($data['boards']) && empty($data['bookings']) && empty($data['comments'])
             ) {
                 if ($command instanceof Command) {
                     $command->warn('No data fetched from Productive API. Skipping storage.');
@@ -118,7 +135,35 @@ class StoreData extends AbstractAction
                 return true;
             }
 
-            // Store subsidiaries first since other entities might depend on them
+            // Store events
+            if (!empty($data['events'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing events...');
+                }
+
+                $eventsSuccess = 0;
+                $eventsError = 0;
+                foreach ($data['events'] as $eventData) {
+                    try {
+                        $this->storeEventAction->handle([
+                            'eventData' => $eventData,
+                            'command' => $command
+                        ]);
+                        $eventsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store event (ID: {$eventData['id']}): " . $e->getMessage());
+                        }
+                        $eventsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Events: {$eventsSuccess} stored successfully, {$eventsError} failed");
+                }
+            }
+
+            // Store subsidiaries
             if (!empty($data['subsidiaries'])) {
                 if ($command instanceof Command) {
                     $command->info('Storing subsidiaries...');
@@ -397,6 +442,34 @@ class StoreData extends AbstractAction
                 }
             }
 
+            // Store boards
+            if (!empty($data['boards'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing boards...');
+                }
+
+                $boardsSuccess = 0;
+                $boardsError = 0;
+                foreach ($data['boards'] as $boardData) {
+                    try {
+                        $this->storeBoardAction->handle([
+                            'boardData' => $boardData,
+                            'command' => $command
+                        ]);
+                        $boardsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store board (ID: {$boardData['id']}): " . $e->getMessage());
+                        }
+                        $boardsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Boards: {$boardsSuccess} stored successfully, {$boardsError} failed");
+                }
+            }
+
             // Store document types
             if (!empty($data['document_types'])) {
                 if ($command instanceof Command) {
@@ -649,6 +722,34 @@ class StoreData extends AbstractAction
                 }
             }
 
+            // Store bookings
+            if (!empty($data['bookings'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing bookings...');
+                }
+
+                $bookingsSuccess = 0;
+                $bookingsError = 0;
+                foreach ($data['bookings'] as $bookingData) {
+                    try {
+                        $this->storeBookingAction->handle([
+                            'bookingData' => $bookingData,
+                            'command' => $command
+                        ]);
+                        $bookingsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store booking (ID: {$bookingData['id']}): " . $e->getMessage());
+                        }
+                        $bookingsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Bookings: {$bookingsSuccess} stored successfully, {$bookingsError} failed");
+                }
+            }
+
             // Store teams
             if (!empty($data['teams'])) {
                 if ($command instanceof Command) {
@@ -730,6 +831,90 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Invoice Attributions: {$invoiceAttributionsSuccess} stored successfully, {$invoiceAttributionsError} failed");
+                }
+            }
+
+            // Store comments
+            if (!empty($data['comments'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing comments...');
+                }
+
+                $commentsSuccess = 0;
+                $commentsError = 0;
+                foreach ($data['comments'] as $commentData) {
+                    try {
+                        $this->storeCommentAction->handle([
+                            'commentData' => $commentData,
+                            'command' => $command
+                        ]);
+                        $commentsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store comment (ID: {$commentData['id']}): " . $e->getMessage());
+                        }
+                        $commentsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Comments: {$commentsSuccess} stored successfully, {$commentsError} failed");
+                }
+            }
+
+            // Store discussions
+            if (!empty($data['discussions'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing discussions...');
+                }
+
+                $discussionsSuccess = 0;
+                $discussionsError = 0;
+                foreach ($data['discussions'] as $discussionData) {
+                    try {
+                        $this->storeDiscussionAction->handle([
+                            'discussionData' => $discussionData,
+                            'command' => $command
+                        ]);
+                        $discussionsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store discussion (ID: {$discussionData['id']}): " . $e->getMessage());
+                        }
+                        $discussionsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Discussions: {$discussionsSuccess} stored successfully, {$discussionsError} failed");
+                }
+            }
+
+            // Store expenses
+            if (!empty($data['expenses'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing expenses...');
+                }
+
+                $expensesSuccess = 0;
+                $expensesError = 0;
+                foreach ($data['expenses'] as $expenseData) {
+                    try {
+                        $this->storeExpenseAction->handle([
+                            'expenseData' => $expenseData,
+                            'command' => $command
+                        ]);
+                        $expensesSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store expense (ID: {$expenseData['id']}): " . $e->getMessage());
+                        }
+                        $expensesError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Expenses: {$expensesSuccess} stored successfully, {$expensesError} failed");
                 }
             }
 

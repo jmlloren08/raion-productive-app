@@ -27,6 +27,13 @@ use App\Models\ProductiveTeam;
 use App\Models\ProductiveEmail;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductiveInvoiceAttribution;
+use App\Models\ProductiveActivity;
+use App\Models\ProductiveBoard;
+use App\Models\ProductiveBooking;
+use App\Models\ProductiveComment;
+use App\Models\ProductiveDiscussion;
+use App\Models\ProductiveEvent;
+use App\Models\ProductiveExpense;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -77,6 +84,13 @@ class GetSyncStatus extends AbstractAction
                 'teams_count' => ProductiveTeam::count(),
                 'invoices_count' => ProductiveInvoice::count(),
                 'invoice_attributions_count' => ProductiveInvoiceAttribution::count(),
+                'boards' => ProductiveBoard::count(),
+                'bookings' => ProductiveBooking::count(),
+                'comments' => ProductiveComment::count(),
+                'discussions' => ProductiveDiscussion::count(),
+                'events' => ProductiveEvent::count(),
+                'expenses' => ProductiveExpense::count(),
+                // 'activities_count' => ProductiveActivity::count(),
             ];
 
             // Get detailed relationship stats

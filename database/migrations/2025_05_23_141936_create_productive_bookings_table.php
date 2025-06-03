@@ -17,13 +17,13 @@ return new class extends Migration
             $table->string('type')->default('bookings'); // type of booking, e.g., 'booking', 'time_entry', etc.
             // Core attributes
             $table->float('hours')->nullable();
-            $table->integer('time');
-            $table->date('started_on');
-            $table->date('ended_on');
+            $table->integer('time')->nullable();
+            $table->date('started_on')->nullable();
+            $table->date('ended_on')->nullable();
             $table->text('note')->nullable();
-            $table->integer('total_time')->default(0);
-            $table->integer('total_working_days')->default(0);
-            $table->integer('percentage')->default(100);
+            $table->integer('total_time')->nullable();
+            $table->integer('total_working_days')->nullable();
+            $table->integer('percentage')->nullable();
             $table->timestamp('created_at_api')->nullable();
             $table->timestamp('updated_at_api')->nullable();
             $table->text('people_custom_fields')->nullable();
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->text('custom_fields')->nullable();
             $table->string('external_id')->nullable();
             $table->timestamp('last_activity_at_api')->nullable();
-            $table->string('stage_type')->nullable();
+            $table->integer('stage_type')->nullable();
             // Relationships
             $table->string('service_id')->nullable();
             $table->string('event_id')->nullable();
@@ -51,7 +51,7 @@ return new class extends Migration
             $table->string('rejecter_id')->nullable();
             $table->string('canceler_id')->nullable();
             $table->string('origin_id')->nullable();
-            $table->json('approval_statuses')->nullable();
+            $table->string('approval_status_id')->nullable();
             $table->string('attachment_id')->nullable();
             // Arrays
             $table->json('custom_field_people')->nullable();

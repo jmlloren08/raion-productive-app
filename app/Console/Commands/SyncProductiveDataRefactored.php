@@ -26,11 +26,16 @@ use App\Actions\Productive\Fetch\FetchTeams;
 use App\Actions\Productive\Fetch\FetchEmails;
 use App\Actions\Productive\Fetch\FetchInvoices;
 use App\Actions\Productive\Fetch\FetchInvoiceAttributions;
+// use App\Actions\Productive\Fetch\FetchActivities;
+use App\Actions\Productive\Fetch\FetchBoards;
+use App\Actions\Productive\Fetch\FetchBookings;
+use App\Actions\Productive\Fetch\FetchComments;
+use App\Actions\Productive\Fetch\FetchDiscussions;
+use App\Actions\Productive\Fetch\FetchEvents;
+use App\Actions\Productive\Fetch\FetchExpenses;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
-use App\Models\ProductiveContactEntry;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SyncProductiveDataRefactored extends Command
@@ -60,7 +65,14 @@ class SyncProductiveDataRefactored extends Command
         'teams' => [],
         'emails' => [],
         'invoices' => [],
-        'invoice_attributions' => []
+        'invoice_attributions' => [],
+        'boards' => [],
+        'bookings' => [],
+        'comments' => [],
+        'discussions' => [],
+        'events' => [],
+        'expenses' => [],
+        // 'activities' => []
     ];
 
     public function __construct(
@@ -88,6 +100,12 @@ class SyncProductiveDataRefactored extends Command
         private FetchEmails $fetchEmailsAction,
         private FetchInvoices $fetchInvoicesAction,
         private FetchInvoiceAttributions $fetchInvoiceAttributionsAction,
+        private FetchBoards $fetchBoardsAction,
+        private FetchBookings $fetchBookingsAction,
+        private FetchComments $fetchCommentsAction,
+        private FetchDiscussions $fetchDiscussionsAction,
+        private FetchEvents $fetchEventsAction,
+        private FetchExpenses $fetchExpensesAction,
         private StoreData $storeDataAction,
         private ValidateDataIntegrity $validateDataIntegrityAction
     ) {
@@ -109,7 +127,20 @@ class SyncProductiveDataRefactored extends Command
             $apiClient = $this->initializeClientAction->handle();
             $this->info('Fetching data from Productive API...');
 
-            // Fetch subsidiaries first since other entities might depend on them
+            // Fetch events
+            $events = $this->fetchEventsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$events['success']) {
+                $this->error('Failed to fetch events: ' . ($events['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['events'] = $events['events'];
+            
+            // Fetch subsidiaries
             $subsidiaries = $this->fetchSubsidiariesAction->handle([
                 'apiClient' => $apiClient,
                 'command' => $this
@@ -212,6 +243,19 @@ class SyncProductiveDataRefactored extends Command
             }
 
             $this->data['workflows'] = $workflows['workflows'];
+
+            // Fetch boards
+            $boards = $this->fetchBoardsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$boards['success']) {
+                $this->error('Failed to fetch boards: ' . ($boards['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['boards'] = $boards['boards'];
 
             // Fetch projects
             $projects = $this->fetchProjectsAction->handle([
@@ -369,6 +413,19 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['attachments'] = $attachments['attachments'];
 
+            // Fetch bookings
+            $bookings = $this->fetchBookingsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$bookings['success']) {
+                $this->error('Failed to fetch bookings: ' . ($bookings['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['bookings'] = $bookings['bookings'];
+
             // Fetch teams
             $teams = $this->fetchTeamsAction->handle([
                 'apiClient' => $apiClient,
@@ -407,6 +464,45 @@ class SyncProductiveDataRefactored extends Command
             }
 
             $this->data['invoice_attributions'] = $invoiceAttributions['invoice_attributions'];
+
+            // Fetch comments
+            $comments = $this->fetchCommentsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$comments['success']) {
+                $this->error('Failed to fetch comments: ' . ($comments['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['comments'] = $comments['comments'];
+
+            // Fetch discussions
+            $discussions = $this->fetchDiscussionsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$discussions['success']) {
+                $this->error('Failed to fetch discussions: ' . ($discussions['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['discussions'] = $discussions['discussions'];
+
+            // Fetch expenses
+            $expenses = $this->fetchExpensesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$expenses['success']) {
+                $this->error('Failed to fetch expenses: ' . ($expenses['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['expenses'] = $expenses['expenses'];
 
             // Store data in MySQL
             $this->info('Storing data in database...');
@@ -452,6 +548,12 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Emails synced: ' . count($this->data['emails']));
             $this->info('Invoices synced: ' . count($this->data['invoices']));
             $this->info('Invoice Attributions synced: ' . count($this->data['invoice_attributions']));
+            $this->info('Boards synced: ' . count($this->data['boards']));
+            $this->info('Bookings synced: ' . count($this->data['bookings']));
+            $this->info('Comments synced: ' . count($this->data['comments']));
+            $this->info('Events synced: ' . count($this->data['events']));
+            $this->info('Discussions synced: ' . count($this->data['discussions']));
+            $this->info('Expenses synced: ' . count($this->data['expenses']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 

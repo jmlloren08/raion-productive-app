@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('type')->default('boards'); // type of board, e.g., 'kanban', 'scrum', etc.
             // Core attributes
             $table->string('name');
-            $table->integer('position')->default(1);
-            $table->integer('placement')->default(1010000);
+            $table->integer('position')->nullable();
+            $table->integer('placement')->nullable();
             $table->timestamp('archived_at')->nullable();
             // Relationships
             $table->string('project_id')->nullable();

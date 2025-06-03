@@ -27,7 +27,15 @@ use App\Models\ProductiveTeam;
 use App\Models\ProductiveEmail;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductiveInvoiceAttribution;
+use App\Models\ProductiveActivity;
+use App\Models\ProductiveBoard;
+use App\Models\ProductiveBooking;
+use App\Models\ProductiveComment;
+use App\Models\ProductiveDiscussion;
+use App\Models\ProductiveEvent;
+use App\Models\ProductiveExpense;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class GetRelationshipStats extends AbstractAction
 {
@@ -47,7 +55,6 @@ class GetRelationshipStats extends AbstractAction
                     'total' => ProductiveCompany::count(),
                     'with_default_subsidiary' => ProductiveCompany::whereNotNull('default_subsidiary_id')->count(),
                     'with_default_tax_rate' => ProductiveCompany::whereNotNull('default_tax_rate_id')->count(),
-                    'with_document_style' => ProductiveCompany::whereNotNull('document_style_id')->count()
                 ],
                 'document_styles' => [
                     'total' => ProductiveDocumentStyle::count(),
@@ -65,6 +72,9 @@ class GetRelationshipStats extends AbstractAction
                     'with_project_manager' => ProductiveProject::whereNotNull('project_manager_id')->count(),
                     'with_last_actor' => ProductiveProject::whereNotNull('last_actor_id')->count(),
                     'with_workflow' => ProductiveProject::whereNotNull('workflow_id')->count(),
+                    'with_creator' => ProductiveProject::whereNotNull('creator_id')->count(),
+                    'with_updater' => ProductiveProject::whereNotNull('updater_id')->count(),
+                    'with_attachment' => ProductiveProject::whereNotNull('attachment_id')->count(),
                 ],
                 'people' => [
                     'total' => ProductivePeople::count(),
@@ -73,6 +83,9 @@ class GetRelationshipStats extends AbstractAction
                     'with_subsidiary' => ProductivePeople::whereNotNull('subsidiary_id')->count(),
                     'with_tax_rate' => ProductivePeople::whereNotNull('tax_rate_id')->count(),
                     'with_apa' => ProductivePeople::whereNotNull('apa_id')->count(),
+                    'with_creator' => ProductivePeople::whereNotNull('creator_id')->count(),
+                    'with_updater' => ProductivePeople::whereNotNull('updater_id')->count(),
+                    'with_attachment' => ProductivePeople::whereNotNull('attachment_id')->count(),
                 ],
                 'tax_rates' => [
                     'total' => ProductiveTaxRate::count(),
@@ -136,6 +149,9 @@ class GetRelationshipStats extends AbstractAction
                     'with_subsidiary' => ProductiveDeal::whereNotNull('subsidiary_id')->count(),
                     'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
                     'with_apa' => ProductiveDeal::whereNotNull('apa_id')->count(),
+                    'with_updater' => ProductiveDeal::whereNotNull('updater_id')->count(),
+                    'with_assignee' => ProductiveDeal::whereNotNull('assignee_id')->count(),
+                    'with_attachment' => ProductiveDeal::whereNotNull('attachment_id')->count(),
                 ],
                 'purchase_orders' => [
                     'total' => ProductivePurchaseOrder::count(),
@@ -197,6 +213,68 @@ class GetRelationshipStats extends AbstractAction
                     'with_invoice' => ProductiveInvoiceAttribution::whereNotNull('invoice_id')->count(),
                     'with_budget' => ProductiveInvoiceAttribution::whereNotNull('budget_id')->count(),
                 ],
+                'boards' => [
+                    'total' => ProductiveBoard::count(),
+                    'with_project' => ProductiveBoard::whereNotNull('project_id')->count(),
+                ],
+                'bookings' => [
+                    'total' => ProductiveBooking::count(),
+                    'with_service' => ProductiveBooking::whereNotNull('service_id')->count(),
+                    'with_event' => ProductiveBooking::whereNotNull('event_id')->count(),
+                    'with_creator' => ProductiveBooking::whereNotNull('creator_id')->count(),
+                    'with_updater' => ProductiveBooking::whereNotNull('updater_id')->count(),
+                    'with_approver' => ProductiveBooking::whereNotNull('approver_id')->count(),
+                    'with_rejecter' => ProductiveBooking::whereNotNull('rejecter_id')->count(),
+                    'with_canceler' => ProductiveBooking::whereNotNull('canceler_id')->count(),
+                    'with_origin' => ProductiveBooking::whereNotNull('origin_id')->count(),
+                    'with_approval_status' => ProductiveBooking::whereNotNull('approval_status_id')->count(),
+                    'with_attachment' => ProductiveBooking::whereNotNull('attachment_id')->count(),
+                    'with_project' => ProductiveBooking::whereNotNull('project_id')->count(),
+                ],
+                'comments' => [
+                    'total' => ProductiveComment::count(),
+                    'with_company' => ProductiveComment::whereNotNull('company_id')->count(),
+                    'with_creator' => ProductiveComment::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveComment::whereNotNull('deal_id')->count(),
+                    'with_discussion' => ProductiveComment::whereNotNull('discussion_id')->count(),
+                    'with_invoice' => ProductiveComment::whereNotNull('invoice_id')->count(),
+                    'with_person' => ProductiveComment::whereNotNull('person_id')->count(),
+                    'with_pinned_by' => ProductiveComment::whereNotNull('pinned_by_id')->count(),
+                    'with_task' => ProductiveComment::whereNotNull('task_id')->count(),
+                    'with_purchase_order' => ProductiveComment::whereNotNull('purchase_order_id')->count(),
+                    'with_attachment' => ProductiveComment::whereNotNull('attachment_id')->count(),
+                    'with_updater' => ProductiveComment::whereNotNull('updater_id')->count(),
+                    'with_project' => ProductiveComment::whereNotNull('project_id')->count(),
+                    'with_board' => ProductiveComment::whereNotNull('board_id')->count(),
+                    'with_booking' => ProductiveComment::whereNotNull('booking_id')->count(),
+                ],
+                'discussions' => [
+                    'total' => ProductiveDiscussion::count(),
+                    'with_page' => ProductiveDiscussion::whereNotNull('page_id')->count(),
+                ],
+                'events' => [
+                    'total' => ProductiveEvent::count(),
+                ],
+                'expenses' => [
+                    'total' => ProductiveExpense::count(),
+                    'with_deal' => ProductiveExpense::whereNotNull('deal_id')->count(),
+                    'with_service_type' => ProductiveExpense::whereNotNull('service_type_id')->count(),
+                    'with_person' => ProductiveExpense::whereNotNull('person_id')->count(),
+                    'with_creator' => ProductiveExpense::whereNotNull('creator_id')->count(),
+                    'with_approver' => ProductiveExpense::whereNotNull('approver_id')->count(),
+                    'with_rejecter' => ProductiveExpense::whereNotNull('rejecter_id')->count(),
+                    'with_service' => ProductiveExpense::whereNotNull('service_id')->count(),
+                    'with_purchase_order' => ProductiveExpense::whereNotNull('purchase_order_id')->count(),
+                    'with_tax_rate' => ProductiveExpense::whereNotNull('tax_rate_id')->count(),
+                    'with_attachment' => ProductiveExpense::whereNotNull('attachment_id')->count(),
+                ],
+                // 'activities' => [
+                //     'total' => ProductiveActivity::count(),
+                //     'with_creator' => ProductiveActivity::whereNotNull('creator_id')->count(),
+                //     'with_comment' => ProductiveActivity::whereNotNull('comment_id')->count(),
+                //     'with_email' => ProductiveActivity::whereNotNull('email_id')->count(),
+                //     'with_attachment' => ProductiveActivity::whereNotNull('attachment_id')->count(),
+                // ],
             ];
 
             // Output report if command is provided
@@ -232,6 +310,13 @@ class GetRelationshipStats extends AbstractAction
                 'teams' => $stats['teams'],
                 'invoices' => $stats['invoices'],
                 'invoice_attributions' => $stats['invoice_attributions'],
+                'boards' => $stats['boards'],
+                'bookings' => $stats['bookings'],
+                'comments' => $stats['comments'],
+                'discussions' => $stats['discussions'],
+                'events' => $stats['events'],
+                'expenses' => $stats['expenses'],
+                // 'activities' => $stats['activities']
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
@@ -264,6 +349,13 @@ class GetRelationshipStats extends AbstractAction
                 'teams' => ['total' => ProductiveTeam::count()],
                 'invoices' => ['total' => ProductiveInvoice::count()],
                 'invoice_attributions' => ['total' => ProductiveInvoiceAttribution::count()],
+                'boards' => ['total' => ProductiveBoard::count()],
+                'bookings' => ['total' => ProductiveBooking::count()],
+                'comments' => ['total' => ProductiveComment::count()],
+                'discussions' => ['total' => ProductiveDiscussion::count()],
+                'events' => ['total' => ProductiveEvent::count()],
+                'expenses' => ['total' => ProductiveExpense::count()],
+                // 'activities' => ['total' => ProductiveActivity::count()]
             ];
         }
     }

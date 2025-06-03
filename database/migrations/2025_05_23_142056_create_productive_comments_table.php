@@ -16,8 +16,8 @@ return new class extends Migration
             $table->id('id')->primary();
             $table->string('type')->default('comments'); // type of comment, e.g., 'text', 'image', etc.
             // Core attributes
-            $table->text('body');
-            $table->string('commentable_type');
+            $table->text('body')->nullable();
+            $table->string('commentable_type')->nullable();
             $table->timestamp('created_at_api')->nullable();
             $table->timestamp('deleted_at_api')->nullable();
             $table->boolean('draft')->default(false);
