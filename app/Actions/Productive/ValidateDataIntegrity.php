@@ -66,9 +66,6 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_project_manager' => ProductiveProject::whereNotNull('project_manager_id')->count(),
                     'with_last_actor' => ProductiveProject::whereNotNull('last_actor_id')->count(),
                     'with_workflow' => ProductiveProject::whereNotNull('workflow_id')->count(),
-                    'with_creator' => ProductiveProject::whereNotNull('creator_id')->count(),
-                    'with_updater' => ProductiveProject::whereNotNull('updater_id')->count(),
-                    'with_attachment' => ProductiveProject::whereNotNull('attachment_id')->count(),
                 ],
                 'people' => [
                     'total' => ProductivePeople::count(),
@@ -77,9 +74,6 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_subsidiary' => ProductivePeople::whereNotNull('subsidiary_id')->count(),
                     'with_apa_id' => ProductivePeople::whereNotNull('apa_id')->count(),
                     'with_team_id' => ProductivePeople::whereNotNull('team_id')->count(),
-                    'with_creator' => ProductivePeople::whereNotNull('creator_id')->count(),
-                    'with_updater' => ProductivePeople::whereNotNull('updater_id')->count(),
-                    'with_attachment' => ProductivePeople::whereNotNull('attachment_id')->count(),
                 ],
                 'workflows' => [
                     'total' => ProductiveWorkflow::count(),
@@ -162,8 +156,6 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_subsidiary' => ProductiveDeal::whereNotNull('subsidiary_id')->count(),
                     'with_tax_rate' => ProductiveDeal::whereNotNull('tax_rate_id')->count(),
                     'with_apa' => ProductiveDeal::whereNotNull('apa_id')->count(),
-                    'with_updater' => ProductiveDeal::whereNotNull('updater_id')->count(),
-                    'with_attachment' => ProductiveDeal::whereNotNull('attachment_id')->count(),
                 ],
                 'emails' => [
                     'total' => ProductiveEmail::count(),
@@ -245,8 +237,6 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_task' => ProductiveComment::whereNotNull('task_id')->count(),
                     'with_purchase_order' => ProductiveComment::whereNotNull('purchase_order_id')->count(),
                     'with_attachment' => ProductiveComment::whereNotNull('attachment_id')->count(),
-                    'with_board' => ProductiveComment::whereNotNull('board_id')->count(),
-                    'with_booking' => ProductiveComment::whereNotNull('booking_id')->count(),
                 ],
                 'discussions' => [
                     'total' => ProductiveDiscussion::count(),
@@ -295,9 +285,6 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Project Manager: {$stats['projects']['with_project_manager']}");
                 $command->info("- With Last Actor: {$stats['projects']['with_last_actor']}");
                 $command->info("- With Workflow: {$stats['projects']['with_workflow']}");
-                $command->info("- With Creator: {$stats['projects']['with_creator']}");
-                $command->info("- With Updater: {$stats['projects']['with_updater']}");
-                $command->info("- With Attachment: {$stats['projects']['with_attachment']}");
 
                 // People
                 $command->info("\nPeople:");
@@ -307,9 +294,6 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Subsidiary: {$stats['people']['with_subsidiary']}");
                 $command->info("- With APA: {$stats['people']['with_apa_id']}");
                 $command->info("- With Team: {$stats['people']['with_team_id']}");
-                $command->info("- With Creator: {$stats['people']['with_creator']}");
-                $command->info("- With Updater: {$stats['people']['with_updater']}");
-                $command->info("- With Attachment: {$stats['people']['with_attachment']}");
 
                 // Workflows
                 $command->info("\nWorkflows:");
@@ -386,8 +370,6 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Subsidiary: {$stats['deals']['with_subsidiary']}");
                 $command->info("- With Tax Rate: {$stats['deals']['with_tax_rate']}");
                 $command->info("- With APA: {$stats['deals']['with_apa']}");
-                $command->info("- With Updater: {$stats['deals']['with_updater']}");
-                $command->info("- With Attachment: {$stats['deals']['with_attachment']}");
 
                 // Purchase Orders
                 $command->info("\nPurchase Orders:");
@@ -498,8 +480,6 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Task: {$stats['comments']['with_task']}");
                 $command->info("- With Purchase Order: {$stats['comments']['with_purchase_order']}");
                 $command->info("- With Attachment: {$stats['comments']['with_attachment']}");
-                $command->info("- With Board: {$stats['comments']['with_board']}");
-                $command->info("- With Booking: {$stats['comments']['with_booking']}");
 
                 // Discussions
                 $command->info("\nDiscussions:");
