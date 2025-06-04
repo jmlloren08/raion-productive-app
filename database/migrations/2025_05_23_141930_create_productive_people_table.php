@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('productive_people', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('people'); // type of person, e.g., 'user', 'client',
             // Core attributes
             $table->string('avatar_url')->nullable();
@@ -61,7 +61,7 @@ return new class extends Migration
             $table->boolean('timesheet_submission_disabled')->default(false);
             // Relationships - using foreign IDs without constraints to avoid circular dependencies
             $table->string('manager_id')->nullable();
-            $table->string('company_id')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
             $table->string('subsidiary_id')->nullable();
             $table->json('custom_role')->nullable();
             $table->string('apa_id')->nullable();

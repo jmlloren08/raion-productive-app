@@ -34,10 +34,10 @@ return new class extends Migration
             $table->json('task_custom_fields_positions')->nullable();
             $table->boolean('sample_data')->default(false);
             // Relationships
-            $table->string('company_id')->nullable();
-            $table->string('project_manager_id')->nullable();
-            $table->string('last_actor_id')->nullable();
-            $table->string('workflow_id')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
+            $table->unsignedBigInteger('project_manager_id')->nullable();
+            $table->unsignedBigInteger('last_actor_id')->nullable();
+            $table->unsignedBigInteger('workflow_id')->nullable();
             
             $table->timestamps(); // Laravel's created_at and updated_at
             $table->softDeletes();

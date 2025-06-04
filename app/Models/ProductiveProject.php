@@ -13,7 +13,6 @@ class ProductiveProject extends Model
 
     protected $table = 'productive_projects';
     
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 

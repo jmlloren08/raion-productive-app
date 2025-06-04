@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_workflows', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('workflow'); // type of workflow, e.g., 'project', 'task', etc.
             // Core attributes
             $table->string('name');
