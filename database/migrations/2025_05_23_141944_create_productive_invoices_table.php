@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_invoices', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('invoices'); // type of invoice, e.g., 'invoice', 'credit_note', etc.
             // Core attributes
             $table->string('number')->nullable();
@@ -82,16 +82,16 @@ return new class extends Migration
             $table->decimal('amount_credited_with_tax_default', 10, 2)->nullable();
             $table->decimal('amount_credited_with_tax_normalized', 10, 2)->nullable();
             // Relationships
-            $table->string('bill_to_id')->nullable();
-            $table->string('bill_from_id')->nullable();
-            $table->string('company_id')->nullable();
-            $table->string('document_type_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('subsidiary_id')->nullable();
-            $table->string('parent_invoice_id')->nullable();
-            $table->string('issuer_id')->nullable();
-            $table->string('invoice_attribution_id')->nullable();
-            $table->string('attachment_id')->nullable();
+            $table->unsignedBigInteger('bill_to_id')->nullable();
+            $table->unsignedBigInteger('bill_from_id')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
+            $table->unsignedBigInteger('document_type_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('parent_invoice_id')->nullable();
+            $table->unsignedBigInteger('issuer_id')->nullable();
+            $table->unsignedBigInteger('invoice_attribution_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
             // Arrays
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

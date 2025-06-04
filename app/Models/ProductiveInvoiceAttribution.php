@@ -11,7 +11,6 @@ class ProductiveInvoiceAttribution extends Model
 
     protected $table = 'productive_invoice_attributions';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

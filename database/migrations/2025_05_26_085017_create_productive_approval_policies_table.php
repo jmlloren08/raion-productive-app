@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_approval_policies', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('approval_policies');
             // Core attributes
             $table->timestamp('archived_at')->nullable();

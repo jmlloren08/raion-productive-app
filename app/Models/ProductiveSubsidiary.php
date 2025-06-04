@@ -13,7 +13,6 @@ class ProductiveSubsidiary extends Model
 
     protected $table = 'productive_subsidiaries';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 

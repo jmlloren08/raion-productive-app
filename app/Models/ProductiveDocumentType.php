@@ -13,7 +13,6 @@ class ProductiveDocumentType extends Model
 
     protected $table = 'productive_document_types';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 

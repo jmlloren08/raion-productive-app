@@ -11,7 +11,6 @@ class ProductiveBoard extends Model
 
     protected $table = 'productive_boards';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

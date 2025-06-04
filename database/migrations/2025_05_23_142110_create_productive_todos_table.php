@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_todos', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('todos'); // type of todo, e.g., 'todo', 'task', etc.
             // Core attributes
             $table->string('description');
@@ -25,9 +25,9 @@ return new class extends Migration
             $table->time('due_time')->nullable();
             $table->integer('position')->default(0);
             // Relationships
-            $table->string('assignee_id')->nullable();
-            $table->string('deal_id')->nullable();
-            $table->string('task_id')->nullable();
+            $table->unsignedBigInteger('assignee_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->unsignedBigInteger('task_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes();

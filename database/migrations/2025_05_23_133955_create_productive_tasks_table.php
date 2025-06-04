@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_tasks', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('tasks'); // type of task, e.g., 'task', 'subtask', etc.
             // Core attributes
             $table->string('title');
@@ -57,15 +57,15 @@ return new class extends Migration
             $table->unsignedInteger('worked_time')->nullable();
             $table->timestamp('deleted_at_api')->nullable();
             // Relationships
-            $table->string('project_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('assignee_id')->nullable();
-            $table->string('last_actor_id')->nullable();
-            $table->string('task_list_id')->nullable();
-            $table->string('parent_task_id')->nullable();
-            $table->string('workflow_status_id')->nullable();
+            $table->unsignedBigInteger('project_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('assignee_id')->nullable();
+            $table->unsignedBigInteger('last_actor_id')->nullable();
+            $table->unsignedBigInteger('task_list_id')->nullable();
+            $table->unsignedBigInteger('parent_task_id')->nullable();
+            $table->unsignedBigInteger('workflow_status_id')->nullable();
             $table->json('repeated_task')->nullable();
-            $table->string('attachment_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
             // Arrays
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

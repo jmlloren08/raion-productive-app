@@ -12,7 +12,6 @@ class ProductiveDeal extends Model
 
     protected $table = 'productive_deals';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 

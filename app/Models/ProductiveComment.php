@@ -11,7 +11,6 @@ class ProductiveComment extends Model
 
     protected $table = 'productive_comments';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

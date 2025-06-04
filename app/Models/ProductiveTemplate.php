@@ -11,7 +11,6 @@ class ProductiveTemplate extends Model
 
     protected $table = 'productive_templates';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 }

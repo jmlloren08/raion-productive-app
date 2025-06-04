@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_custom_domains', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('custom_domains'); // type of custom domain, e.g., 'organization', 'user', etc.
             // Core attributes
             $table->string('name');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->json('mailgun_mx')->nullable();
             $table->boolean('allow_user_email')->default(false);
 
-            $table->string('subsidiary_id')->nullable(); // JSON to store subsidiary domains or related information
+            $table->unsignedBigInteger('subsidiary_id')->nullable(); // JSON to store subsidiary domains or related information
             
             $table->timestamps();
             $table->softDeletes();

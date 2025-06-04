@@ -60,12 +60,14 @@ return new class extends Migration
             $table->boolean('champion')->default(false);
             $table->boolean('timesheet_submission_disabled')->default(false);
             // Relationships - using foreign IDs without constraints to avoid circular dependencies
-            $table->string('manager_id')->nullable();
+            $table->unsignedBigInteger('manager_id')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();
-            $table->string('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
+
             $table->json('custom_role')->nullable();
-            $table->string('apa_id')->nullable();
-            $table->string('team_id')->nullable();
+            
+            $table->unsignedBigInteger('apa_id')->nullable();
+            $table->unsignedBigInteger('team_id')->nullable();
 
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

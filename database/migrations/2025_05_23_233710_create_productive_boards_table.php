@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_boards', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('boards'); // type of board, e.g., 'kanban', 'scrum', etc.
             // Core attributes
             $table->string('name');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('placement')->nullable();
             $table->timestamp('archived_at')->nullable();
             // Relationships
-            $table->string('project_id')->nullable();
+            $table->unsignedBigInteger('project_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

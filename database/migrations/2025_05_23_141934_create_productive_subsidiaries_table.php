@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_subsidiaries', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('subsidiaries'); // type of subsidiary, e.g., 'project', 'task', etc();
             // Core attributes
             $table->string('name');
@@ -27,10 +27,10 @@ return new class extends Migration
             $table->string('export_integration_type_id')->nullable();
             $table->string('invoice_logo_url')->nullable();
             // Relationships
-            $table->string('contact_entry_id')->nullable();
-            $table->string('custom_domain_id')->nullable();
-            $table->string('default_tax_rate_id')->nullable();
-            $table->string('integration_id')->nullable();
+            $table->unsignedBigInteger('contact_entry_id')->nullable();
+            $table->unsignedBigInteger('custom_domain_id')->nullable();
+            $table->unsignedBigInteger('default_tax_rate_id')->nullable();
+            $table->unsignedBigInteger('integration_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

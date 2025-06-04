@@ -11,20 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('productive_time_entry_versions', function (Blueprint $table) {
+        Schema::create('productive_prs', function (Blueprint $table) {
             // Primary key
             $table->unsignedBigInteger('id')->primary();
-            $table->string('type')->default('time_entry_versions'); // type of entry, e.g., 'time', 'expense', etc.
-            // Basic attributes
-            $table->string('event');
-            $table->json('object_changes');
-            $table->unsignedBigInteger('item_id')->nullable();
-            $table->string('item_type');
+            $table->string('type')->default('payment_reminder_sequences');
+            // Attributes
+            $table->string('name')->nullable();
             $table->timestamp('created_at_api')->nullable();
-
-            // Foreign keys (nullable to support partial data fetches)
-            // $table->foreignId('time_entry_id')->nullable();
+            $table->timestamp('updated_at_api')->nullable();
+            $table->boolean('default_sequence')->default(false);
+            // Relationships
             $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('updater_id')->nullable();
+            $table->unsignedBigInteger('payment_reminder_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
@@ -36,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('productive_time_entry_versions');
+        Schema::dropIfExists('productive_prs');
     }
 };

@@ -11,7 +11,6 @@ class ProductivePage extends Model
 
     protected $table = 'productive_pages';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_teams', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('teams'); // type of team, e.g., 'project', 'department', etc.
             // Core attributes
             $table->string('color_id')->nullable();

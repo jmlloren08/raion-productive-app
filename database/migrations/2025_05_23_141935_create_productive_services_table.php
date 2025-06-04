@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_services', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('services'); // type of service, e.g., 'email', 'chat', etc.
             // Core attributes
             $table->string('name');
@@ -80,10 +80,10 @@ return new class extends Migration
             $table->decimal('markup_amount_default', 10, 2)->default(0.00);
             $table->decimal('markup_amount_normalized', 10, 2)->default(0.00);
             // Relationships
-            $table->string('service_type_id')->nullable();
-            $table->string('deal_id')->nullable();
-            $table->string('person_id')->nullable();
-            $table->string('section_id')->nullable();
+            $table->unsignedBigInteger('service_type_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->unsignedBigInteger('person_id')->nullable();
+            $table->unsignedBigInteger('section_id')->nullable();
 
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

@@ -13,13 +13,14 @@ class ProductivePeople extends Model
 
     protected $table = 'productive_people';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 
     protected $fillable = [
+
         'id',
         'type',
+        
         'avatar_url',
         'contact',
         'deactivated_at',

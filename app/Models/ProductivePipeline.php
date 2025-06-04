@@ -13,7 +13,6 @@ class ProductivePipeline extends Model
 
     protected $table = 'productive_pipelines';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 

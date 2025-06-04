@@ -12,7 +12,6 @@ class ProductiveTimeEntry extends Model
 
     protected $table = 'productive_time_entries';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

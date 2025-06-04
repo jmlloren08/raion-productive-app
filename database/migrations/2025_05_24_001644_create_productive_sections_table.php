@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_sections', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('sections'); // type of section, e.g., 'header', 'footer', etc.
             // Core attributes
             $table->string('name')->nullable();
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('position')->default(1);
             $table->json('editor_config')->nullable();
             // Relationships
-            $table->string('deal_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

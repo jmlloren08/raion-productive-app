@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::create('productive_contact_entries', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('contact_entries'); // type of event, e.g., 'meeting', 'call', etc.
             // Core attributes
             $table->string('contactable_type');
@@ -29,11 +29,11 @@ return new class extends Migration
             $table->string('vat')->nullable();
             $table->boolean('billing_address')->default(false)->nullable();
             
-            $table->string('company_id')->nullable();
-            $table->string('person_id')->nullable();
-            $table->string('invoice_id')->nullable();
-            $table->string('subsidiary_id')->nullable();
-            $table->string('purchase_order_id')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
+            $table->unsignedBigInteger('person_id')->nullable();
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('purchase_order_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

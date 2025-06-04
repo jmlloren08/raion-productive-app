@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_time_entries', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('time_entries'); // type of entry, e.g., 'time', 'expense', etc.
             // Basic attributes
             $table->date('date')->nullable();
@@ -42,18 +42,18 @@ return new class extends Migration
             $table->string('currency_normalized', 3)->nullable();
 
             // Foreign keys (nullable to support partial data fetches)
-            $table->string('person_id')->nullable();
-            $table->string('service_id')->nullable();
-            $table->string('task_id')->nullable();
-            $table->string('deal_id')->nullable();
-            $table->string('approver_id')->nullable();
-            $table->string('updater_id')->nullable();
-            $table->string('rejecter_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('last_actor_id')->nullable();
-            $table->string('person_subsidiary_id')->nullable();
-            $table->string('deal_subsidiary_id')->nullable();
-            $table->string('timesheet_id')->nullable();
+            $table->unsignedBigInteger('person_id')->nullable();
+            $table->unsignedBigInteger('service_id')->nullable();
+            $table->unsignedBigInteger('task_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->unsignedBigInteger('approver_id')->nullable();
+            $table->unsignedBigInteger('updater_id')->nullable();
+            $table->unsignedBigInteger('rejecter_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('last_actor_id')->nullable();
+            $table->unsignedBigInteger('person_subsidiary_id')->nullable();
+            $table->unsignedBigInteger('deal_subsidiary_id')->nullable();
+            $table->unsignedBigInteger('timesheet_id')->nullable();
 
             $table->timestamps();
 

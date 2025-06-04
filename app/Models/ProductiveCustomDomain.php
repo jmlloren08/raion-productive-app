@@ -11,7 +11,6 @@ class ProductiveCustomDomain extends Model
 
     protected $table = 'productive_custom_domains';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

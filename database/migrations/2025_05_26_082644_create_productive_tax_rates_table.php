@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_tax_rates', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('tax_rates');
             // Core attributes
             $table->string('name');
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('secondary_component_value', 10, 2)->nullable();
             $table->timestamp('archived_at')->nullable();
             // Relationships
-            $table->string('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

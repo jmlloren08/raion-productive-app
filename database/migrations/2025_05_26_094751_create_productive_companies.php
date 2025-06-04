@@ -32,9 +32,9 @@ return new class extends Migration
             $table->string('leitweg_id')->nullable();
             $table->string('buyer_reference')->nullable();
             $table->string('peppol_id')->nullable();
-            $table->string('default_subsidiary_id')->nullable();
-            $table->string('default_tax_rate_id')->nullable();
-            $table->string('default_document_type_id')->nullable();
+            $table->integer('default_subsidiary_id')->nullable();
+            $table->integer('default_tax_rate_id')->nullable();
+            $table->integer('default_document_type_id')->nullable();
             $table->text('description')->nullable();
             $table->integer('due_days')->nullable();
             $table->json('tag_list')->nullable();
@@ -43,6 +43,10 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->string('external_id')->nullable();
             $table->boolean('external_sync')->default(false);
+
+            // Relationships
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('tax_rate_id')->nullable();
             
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

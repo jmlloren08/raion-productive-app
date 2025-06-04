@@ -12,7 +12,6 @@ class ProductiveTimeEntryVersion extends Model
 
     protected $table = 'productive_time_entry_versions';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

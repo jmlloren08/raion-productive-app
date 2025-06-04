@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_activities', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('activities'); // type of activity, e.g., 'call', 'email', etc.
             // Core attributes
             $table->string('event')->nullable();
@@ -44,10 +44,10 @@ return new class extends Migration
             $table->string('purchase_order_id')->nullable();
             $table->boolean('made_by_automation')->default(false);
             // Relationships
-            $table->string('creator_id')->nullable();
-            $table->string('comment_id')->nullable();
-            $table->string('email_id')->nullable();
-            $table->string('attachment_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('comment_id')->nullable();
+            $table->unsignedBigInteger('email_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
             // Arrays
             $table->json('roles')->nullable(); // e.g., ["admin", "user"]
             

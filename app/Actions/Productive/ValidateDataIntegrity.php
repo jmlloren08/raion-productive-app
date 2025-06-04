@@ -165,7 +165,7 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_creator' => ProductiveEmail::whereNotNull('creator_id')->count(),
                     'with_deal' => ProductiveEmail::whereNotNull('deal_id')->count(),
                     'with_invoice' => ProductiveEmail::whereNotNull('invoice_id')->count(),
-                    'with_payment_reminder_sequence' => ProductiveEmail::whereNotNull('payment_reminder_sequence_id')->count(),
+                    'with_payment_reminder_sequence' => ProductiveEmail::whereNotNull('prs_id')->count(),
                     'with_attachment' => ProductiveEmail::whereNotNull('attachment_id')->count()
                 ],
                 'bills' => [

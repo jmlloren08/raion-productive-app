@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_lost_reasons', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('lost_reasons'); // Type of lost reason, e.g., 'budget', 'scope', etc.
             // Core attributes
             $table->string('name');

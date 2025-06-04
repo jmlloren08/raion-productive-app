@@ -11,7 +11,6 @@ class ProductiveTaskList extends Model
 
     protected $table = 'productive_task_lists';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

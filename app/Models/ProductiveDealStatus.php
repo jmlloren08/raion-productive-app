@@ -12,7 +12,6 @@ class ProductiveDealStatus extends Model
 
     protected $table = 'productive_deal_statuses';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

@@ -11,7 +11,6 @@ class ProductiveService extends Model
 
     protected $table = 'productive_services';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

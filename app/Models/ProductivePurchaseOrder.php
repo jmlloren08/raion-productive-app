@@ -11,7 +11,6 @@ class ProductivePurchaseOrder extends Model
 
     protected $table = 'productive_purchase_orders';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

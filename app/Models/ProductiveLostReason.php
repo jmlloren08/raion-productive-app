@@ -11,7 +11,6 @@ class ProductiveLostReason extends Model
 
     protected $table = 'productive_lost_reasons';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

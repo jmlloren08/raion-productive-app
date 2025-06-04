@@ -13,7 +13,6 @@ class ProductiveDocumentStyle extends Model
 
     protected $table = 'productive_document_styles';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

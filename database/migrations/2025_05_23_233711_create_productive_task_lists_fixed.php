@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_task_lists', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('task_lists'); // type of task list, e.g., 'project', 'task', etc.
             // Core attributes
             $table->string('name');
@@ -22,8 +22,8 @@ return new class extends Migration
             $table->timestamp('archived_at')->nullable();
             $table->string('email_key');
             // Relationships
-            $table->string('project_id')->nullable();
-            $table->string('board_id')->nullable();
+            $table->unsignedBigInteger('project_id')->nullable();
+            $table->unsignedBigInteger('board_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

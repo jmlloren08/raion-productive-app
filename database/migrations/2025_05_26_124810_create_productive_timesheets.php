@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('productive_timesheets', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('timesheets'); // type of timesheet, e.g., 'project', 'task', etc.
             // Core attributes
             $table->date('date')->index();
             $table->timestamp('created_at_api')->nullable(); // renamed to prevent conflict with Laravel's own timestamps
             // Relationships
-            $table->string('person_id')->nullable();
-            $table->string('creator_id')->nullable();
+            $table->unsignedBigInteger('person_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
            
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

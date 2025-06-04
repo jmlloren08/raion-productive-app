@@ -11,7 +11,6 @@ class ProductiveSection extends Model
 
     protected $table = 'productive_sections';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

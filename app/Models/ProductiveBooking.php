@@ -11,7 +11,6 @@ class ProductiveBooking extends Model
 
     protected $table = 'productive_bookings';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_contracts', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('contracts'); // Type of contract, e.g., 'service', 'employment', etc.
             // Core attributes
             $table->date('ends_on')->nullable();
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->boolean('copy_expenses')->default(false);
             $table->boolean('use_rollover_hours')->default(false);
 
-            $table->string('deal_id')->nullable(); // JSON field for template data
+            $table->unsignedBigInteger('deal_id')->nullable(); // JSON field for template data
 
             $table->timestamps();
             $table->softDeletes();

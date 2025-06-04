@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('name');
             $table->timestamp('archived_at')->nullable();
             // Relationships
-            $table->string('workflow_status_id')->nullable();
+            $table->unsignedBigInteger('workflow_status_id')->nullable();
            
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

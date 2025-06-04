@@ -11,7 +11,6 @@ class ProductiveEvent extends Model
 
     protected $table = 'productive_events';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

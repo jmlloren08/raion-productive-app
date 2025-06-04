@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_pipelines', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('pipelines');
             // Core attributes
             $table->string('name');
@@ -24,8 +24,8 @@ return new class extends Migration
             $table->integer('pipeline_type_id');
 
             // Relationships
-            $table->string('creator_id')->nullable();
-            $table->string('updater_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('updater_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes();

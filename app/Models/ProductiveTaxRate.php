@@ -13,7 +13,6 @@ class ProductiveTaxRate extends Model
 
     protected $table = 'productive_tax_rates';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // Disable Laravel timestamps
 

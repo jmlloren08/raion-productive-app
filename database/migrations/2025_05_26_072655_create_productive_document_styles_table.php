@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('productive_document_styles', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('document_styles'); // type of document style, e.g., 'default', 'invoice', etc.
             // Core attributes
             $table->string('name');
             $table->json('styles')->nullable(); // We'll fill this with default values in a seeder
             
-            $table->foreignId('attachment_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

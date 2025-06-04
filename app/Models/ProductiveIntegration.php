@@ -11,7 +11,6 @@ class ProductiveIntegration extends Model
 
     protected $table = 'productive_integrations';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

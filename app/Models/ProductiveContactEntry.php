@@ -12,7 +12,6 @@ class ProductiveContactEntry extends Model
     
     protected $table = 'productive_contact_entries';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; 
 

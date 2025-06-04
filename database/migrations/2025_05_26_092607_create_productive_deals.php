@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_deals', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('deals'); // type of deal, e.g., 'deal', 'opportunity', etc.
             // Core attributes
             $table->string('name');
@@ -107,22 +107,22 @@ return new class extends Migration
             $table->decimal('expense_default', 15, 2);
             $table->decimal('expense_normalized', 15, 2);
             // Relationships
-            $table->string('creator_id')->nullable();
-            $table->string('company_id')->nullable();
-            $table->string('document_type_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
+            $table->unsignedBigInteger('document_type_id')->nullable();
             $table->json('proposal_document_type')->nullable();
-            $table->string('responsible_id')->nullable();
-            $table->string('deal_status_id')->nullable();
-            $table->string('project_id')->nullable();
-            $table->string('lost_reason_id')->nullable();
-            $table->string('contract_id')->nullable();
-            $table->string('contact_id')->nullable();
-            $table->string('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('responsible_id')->nullable();
+            $table->unsignedBigInteger('deal_status_id')->nullable();
+            $table->unsignedBigInteger('project_id')->nullable();
+            $table->unsignedBigInteger('lost_reason_id')->nullable();
+            $table->unsignedBigInteger('contract_id')->nullable();
+            $table->unsignedBigInteger('contact_id')->nullable();
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
             $table->json('template')->nullable();
-            $table->string('tax_rate_id')->nullable();
-            $table->string('pipeline_id')->nullable();
+            $table->unsignedBigInteger('tax_rate_id')->nullable();
+            $table->unsignedBigInteger('pipeline_id')->nullable();
             $table->json('origin_deal')->nullable();
-            $table->string('apa_id')->nullable();
+            $table->unsignedBigInteger('apa_id')->nullable();
             $table->json('next_todo')->nullable();
 
             $table->json('custom_field_people')->nullable();

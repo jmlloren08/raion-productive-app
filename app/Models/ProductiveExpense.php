@@ -11,7 +11,6 @@ class ProductiveExpense extends Model
 
     protected $table = 'productive_expenses';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

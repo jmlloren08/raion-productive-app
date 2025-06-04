@@ -11,7 +11,6 @@ class ProductiveBill extends Model
 
     protected $table = 'productive_bills';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

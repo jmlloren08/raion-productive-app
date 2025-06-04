@@ -13,7 +13,6 @@ class ProductiveAttachment extends Model
 
     protected $table = 'productive_attachments';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

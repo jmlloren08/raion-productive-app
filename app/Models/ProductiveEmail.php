@@ -11,7 +11,6 @@ class ProductiveEmail extends Model
 
     protected $table = 'productive_emails';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 
@@ -38,7 +37,7 @@ class ProductiveEmail extends Model
         'creator_id',
         'deal_id',
         'invoice_id',
-        'integration_id',
+        'prs_id',
         'attachment_id',
     ];
 
@@ -79,9 +78,9 @@ class ProductiveEmail extends Model
     /**
      * Get the integration associated with the email.
      */
-    public function integration()
+    public function prs()
     {
-        return $this->belongsTo(ProductiveIntegration::class, 'integration_id');
+        return $this->belongsTo(ProductivePrs::class, 'prs_id');
     }
 
     /**

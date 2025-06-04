@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_expenses', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('expenses'); // type of expense, e.g., 'travel', 'supplies', etc.
             // Core attributes
             $table->string('name');
@@ -70,17 +70,17 @@ return new class extends Migration
             $table->decimal('total_amount_with_tax_default', 10, 2);
             $table->decimal('total_amount_with_tax_normalized', 10, 2);
             // Relationships
-            $table->string('deal_id')->nullable();
-            $table->string('service_type_id')->nullable();
-            $table->string('person_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('approver_id')->nullable();
-            $table->string('rejecter_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->unsignedBigInteger('service_type_id')->nullable();
+            $table->unsignedBigInteger('person_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('approver_id')->nullable();
+            $table->unsignedBigInteger('rejecter_id')->nullable();
             $table->json('vendor_id')->nullable();
-            $table->string('service_id')->nullable();
-            $table->string('purchase_order_id')->nullable();
-            $table->string('tax_rate_id')->nullable();
-            $table->string('attachment_id')->nullable();
+            $table->unsignedBigInteger('service_id')->nullable();
+            $table->unsignedBigInteger('purchase_order_id')->nullable();
+            $table->unsignedBigInteger('tax_rate_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
             
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

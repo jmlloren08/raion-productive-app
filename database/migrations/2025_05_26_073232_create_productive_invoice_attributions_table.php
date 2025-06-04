@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_invoice_attributions', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('invoice_attributions');
             // Core attributes
             $table->date('date_from')->nullable();
@@ -25,8 +25,8 @@ return new class extends Migration
             $table->string('currency_default', 3);
             $table->string('currency_normalized', 3);
             // Relationships
-            $table->string('invoice_id')->nullable();
-            $table->string('budget_id')->nullable();
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->unsignedBigInteger('budget_id')->nullable();
            
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

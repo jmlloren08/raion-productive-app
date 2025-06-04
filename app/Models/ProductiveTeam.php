@@ -11,7 +11,6 @@ class ProductiveTeam extends Model
 
     protected $table = 'productive_teams';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

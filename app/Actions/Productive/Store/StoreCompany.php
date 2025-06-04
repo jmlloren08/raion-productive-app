@@ -4,6 +4,7 @@ namespace App\Actions\Productive\Store;
 
 use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveCompany;
+use App\Models\ProductiveSubsidiary;
 use App\Models\ProductiveTaxRate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -23,8 +24,8 @@ class StoreCompany extends AbstractAction
      * Foreign key relationships to validate
      */
     protected array $foreignKeys = [
-        'default_subsidiary_id' => ProductiveCompany::class,
-        'default_tax_rate_id' => ProductiveTaxRate::class,
+        'subsidiary_id' => ProductiveSubsidiary::class,
+        'tax_rate_id' => ProductiveTaxRate::class,
     ];
 
     /**
@@ -168,8 +169,8 @@ class StoreCompany extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'default_subsidiary' => 'default_subsidiary_id',
-            'default_tax_rate' => 'default_tax_rate_id',
+            'default_subsidiary' => 'subsidiary_id',
+            'default_tax_rate' => 'tax_rate_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -226,9 +227,9 @@ class StoreCompany extends AbstractAction
             'leitweg_id' => 'nullable|string',
             'buyer_reference' => 'nullable|string',
             'peppol_id' => 'nullable|string',
-            'default_subsidiary_id' => 'nullable|string',
-            'default_tax_rate_id' => 'nullable|string',
-            'default_document_type_id' => 'nullable|string',
+            'default_subsidiary_id' => 'nullable|integer',
+            'default_tax_rate_id' => 'nullable|integer',
+            'default_document_type_id' => 'nullable|integer',
             'description' => 'nullable|string',
             'due_days' => 'nullable|integer',
             'tag_list' => 'nullable|json',
@@ -237,6 +238,11 @@ class StoreCompany extends AbstractAction
             'settings' => 'nullable|json',
             'external_id' => 'nullable|string',
             'external_sync' => 'boolean',
+
+            // Relationships
+            'subsidiary_id' => 'nullable|string',
+            'tax_rate_id' => 'nullable|string',
+
             'custom_field_people' => 'nullable|json',
             'custom_field_attachments' => 'nullable|json'
         ];

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_events', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('events'); // type of event, e.g., 'meeting', 'call', etc.
             // Core attributes
             $table->string('name');

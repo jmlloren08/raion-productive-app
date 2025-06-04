@@ -12,7 +12,6 @@ class ProductiveApa extends Model
     
     protected $table = 'productive_apas';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

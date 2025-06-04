@@ -10,8 +10,7 @@ class ProductiveContract extends Model
     use SoftDeletes;
 
     protected $table = 'productive_contracts';
-
-    protected $keyType = 'string';
+    
     public $incrementing = false;
     public $timestamps = false;
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_workflow_statuses', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('workflow_statuses'); // type of workflow status, e.g., 'draft', 'published', etc.
             // Core attributes
             $table->string('name');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('position')->default(0);
             $table->integer('category_id')->default(0);
             // Relationships
-            $table->string('workflow_id')->nullable();
+            $table->unsignedBigInteger('workflow_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

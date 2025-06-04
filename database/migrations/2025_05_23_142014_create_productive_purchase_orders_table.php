@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_purchase_orders', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('purchase_orders'); // type of purchase order, e.g., 'purchase_order', 'credit_note', etc.
             // Core attributes
             $table->string('subject')->nullable();
@@ -44,12 +44,12 @@ return new class extends Migration
             $table->decimal('total_received_normalized', 16, 4)->nullable();
             // Relationships
             $table->json('vendor')->nullable();
-            $table->string('deal_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('document_type_id')->nullable();
-            $table->string('attachment_id')->nullable();
-            $table->string('bill_to_id')->nullable();
-            $table->string('bill_from_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('document_type_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
+            $table->unsignedBigInteger('bill_to_id')->nullable();
+            $table->unsignedBigInteger('bill_from_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

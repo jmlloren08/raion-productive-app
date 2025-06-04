@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_attachments', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('attachments'); // type of attachment, e.g., 'file', 'image', etc.
             // Core attributes
             $table->string('name');
@@ -30,18 +30,18 @@ return new class extends Migration
             $table->string('external_id')->nullable();
             $table->string('attachable_type');
 
-            $table->string('creator_id')->nullable();
-            $table->string('invoice_id')->nullable();
-            $table->string('purchase_order_id')->nullable();
-            $table->string('bill_id')->nullable();
-            $table->string('email_id')->nullable();
-            $table->string('page_id')->nullable();
-            $table->string('expense_id')->nullable();
-            $table->string('comment_id')->nullable();
-            $table->string('task_id')->nullable();
-            $table->string('document_style_id')->nullable();
-            $table->string('document_type_id')->nullable();
-            $table->string('deal_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->unsignedBigInteger('purchase_order_id')->nullable();
+            $table->unsignedBigInteger('bill_id')->nullable();
+            $table->unsignedBigInteger('email_id')->nullable();
+            $table->unsignedBigInteger('page_id')->nullable();
+            $table->unsignedBigInteger('expense_id')->nullable();
+            $table->unsignedBigInteger('comment_id')->nullable();
+            $table->unsignedBigInteger('task_id')->nullable();
+            $table->unsignedBigInteger('document_style_id')->nullable();
+            $table->unsignedBigInteger('document_type_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
             
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

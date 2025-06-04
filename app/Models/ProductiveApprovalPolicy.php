@@ -11,7 +11,6 @@ class ProductiveApprovalPolicy extends Model
 
     protected $table = 'productive_approval_policies';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_document_types', function (Blueprint $table) {
             // Primary key
-            $table->id();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('document_types');
             // Core attributes
             $table->string('name');
@@ -38,9 +38,9 @@ return new class extends Migration
             $table->json('email_data')->nullable();
             $table->boolean('dual_currency')->default(false);
             // Relationships
-            $table->string('subsidiary_id')->nullable();
-            $table->string('document_style_id')->nullable();
-            $table->string('attachment_id')->nullable();
+            $table->unsignedBigInteger('subsidiary_id')->nullable();
+            $table->unsignedBigInteger('document_style_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

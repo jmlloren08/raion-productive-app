@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_emails', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('emails'); // type of email, e.g., 'inbox', 'sent', etc.
             // Core attributes
             $table->string('subject');
@@ -31,10 +31,11 @@ return new class extends Migration
             $table->boolean('outgoing')->nullable();
             $table->string('from')->nullable();
             // Relationships
-            $table->string('creator_id')->nullable();
-            $table->string('deal_id')->nullable();
-            $table->string('invoice_id')->nullable();
-            $table->string('payment_reminder_sequence_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('deal_id')->nullable();
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->unsignedBigInteger('prs_id')->nullable();
+
             $table->json('thread')->nullable();
             $table->json('integration')->nullable();
             $table->json('email_recipients')->nullable();
@@ -42,7 +43,8 @@ return new class extends Migration
             $table->json('to_recipients')->nullable();
             $table->json('cc_recipients')->nullable();
             $table->json('bcc_recipients')->nullable();
-            $table->string('attachment_id')->nullable();
+
+            $table->unsignedBigInteger('attachment_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

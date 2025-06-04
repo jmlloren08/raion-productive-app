@@ -11,7 +11,6 @@ class ProductiveWorkflow extends Model
 
     protected $table = 'productive_workflows';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

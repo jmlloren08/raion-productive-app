@@ -11,15 +11,12 @@ class ProductiveActivity extends Model
     
     protected $table = 'productive_activities';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 
     protected $fillable = [
-
         'id',
         'type',
-        
         'event',
         'changeset',
         'item_id',

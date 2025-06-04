@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_bookings', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('bookings'); // type of booking, e.g., 'booking', 'time_entry', etc.
             // Core attributes
             $table->float('hours')->nullable();
@@ -42,17 +42,17 @@ return new class extends Migration
             $table->timestamp('last_activity_at_api')->nullable();
             $table->integer('stage_type')->nullable();
             // Relationships
-            $table->string('service_id')->nullable();
-            $table->string('event_id')->nullable();
-            $table->string('person_id')->nullable();
-            $table->string('creator_id')->nullable();
-            $table->string('updater_id')->nullable();
-            $table->string('approver_id')->nullable();
-            $table->string('rejecter_id')->nullable();
-            $table->string('canceler_id')->nullable();
-            $table->string('origin_id')->nullable();
-            $table->string('approval_status_id')->nullable();
-            $table->string('attachment_id')->nullable();
+            $table->unsignedBigInteger('service_id')->nullable();
+            $table->unsignedBigInteger('event_id')->nullable();
+            $table->unsignedBigInteger('person_id')->nullable();
+            $table->unsignedBigInteger('creator_id')->nullable();
+            $table->unsignedBigInteger('updater_id')->nullable();
+            $table->unsignedBigInteger('approver_id')->nullable();
+            $table->unsignedBigInteger('rejecter_id')->nullable();
+            $table->unsignedBigInteger('canceler_id')->nullable();
+            $table->unsignedBigInteger('origin_id')->nullable();
+            $table->unsignedBigInteger('approval_status_id')->nullable();
+            $table->unsignedBigInteger('attachment_id')->nullable();
             // Arrays
             $table->json('custom_field_people')->nullable();
             $table->json('custom_field_attachments')->nullable();

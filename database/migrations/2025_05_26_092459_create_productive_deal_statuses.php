@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_deal_statuses', function (Blueprint $table) {
             // Primary key
-            $table->id('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('deal_statuses'); // type of status, e.g., 'open', 'closed', etc.
             // Core attributes
             $table->string('name');
@@ -29,7 +29,7 @@ return new class extends Migration
             $table->boolean('lost_reason_enabled')->default(false);
             $table->boolean('used')->default(false);
             // Relationships
-            $table->string('pipeline_id')->nullable();
+            $table->unsignedBigInteger('pipeline_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes(); // Soft delete for archiving

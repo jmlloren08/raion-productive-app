@@ -11,7 +11,6 @@ class ProductiveTimesheet extends Model
 
     protected $table = 'productive_timesheets';
 
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 

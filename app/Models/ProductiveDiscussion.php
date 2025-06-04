@@ -11,7 +11,6 @@ class ProductiveDiscussion extends Model
 
     protected $table = 'productive_discussions';
     
-    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
 
