@@ -45,8 +45,8 @@ class ProductivePage extends Model
     ];
 
     protected $casts = [
-        'cover_image_meta' => 'text',
-        'cover_image_url' => 'text',
+        'cover_image_meta' => 'string',
+        'cover_image_url' => 'string',
         'created_at_api' => 'timestamp',
         'edited_at_api' => 'timestamp',
         'icon_id' => 'integer',
@@ -59,7 +59,7 @@ class ProductivePage extends Model
         'body' => 'array',
         'parent_page_id' => 'integer',
         'root_page_id' => 'integer',
-        'public_uuid' => 'uuid',
+        'public_uuid' => 'string',
         'public' => 'boolean',
     ];
 

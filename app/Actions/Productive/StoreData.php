@@ -32,6 +32,9 @@ use App\Actions\Productive\Store\StoreComment;
 use App\Actions\Productive\Store\StoreDiscussion;
 use App\Actions\Productive\Store\StoreEvent;
 use App\Actions\Productive\Store\StoreExpense;
+use App\Actions\Productive\Store\StoreIntegration;
+use App\Actions\Productive\Store\StorePage;
+use App\Actions\Productive\Store\StoreSection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -48,7 +51,10 @@ class StoreData extends AbstractAction
         'comments',
         'discussions',
         'events',
-        'expenses'
+        'expenses',
+        'integrations',
+        'pages',
+        'sections'
     ];
 
     public function __construct(
@@ -81,6 +87,9 @@ class StoreData extends AbstractAction
         private StoreDiscussion $storeDiscussionAction,
         private StoreEvent $storeEventAction,
         private StoreExpense $storeExpenseAction,
+        private StoreIntegration $storeIntegrationAction,
+        private StorePage $storePageAction,
+        private StoreSection $storeSectionAction,
     ) {}
 
     /**
@@ -127,7 +136,9 @@ class StoreData extends AbstractAction
                 empty($data['attachments']) && empty($data['bills']) &&
                 empty($data['teams']) && empty($data['emails']) &&
                 empty($data['invoices']) && empty($data['invoice_attributions']) &&
-                empty($data['boards']) && empty($data['bookings']) && empty($data['comments'])
+                empty($data['boards']) && empty($data['bookings']) && empty($data['comments']) &&
+                empty($data['discussions']) && empty($data['expenses']) &&
+                empty($data['integrations']) && empty($data['pages']) && empty($data['sections'])
             ) {
                 if ($command instanceof Command) {
                     $command->warn('No data fetched from Productive API. Skipping storage.');
@@ -915,6 +926,90 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Expenses: {$expensesSuccess} stored successfully, {$expensesError} failed");
+                }
+            }
+
+            // Store integrations
+            if (!empty($data['integrations'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing integrations...');
+                }
+
+                $integrationsSuccess = 0;
+                $integrationsError = 0;
+                foreach ($data['integrations'] as $integrationData) {
+                    try {
+                        $this->storeIntegrationAction->handle([
+                            'integrationData' => $integrationData,
+                            'command' => $command
+                        ]);
+                        $integrationsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store integration (ID: {$integrationData['id']}): " . $e->getMessage());
+                        }
+                        $integrationsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Integrations: {$integrationsSuccess} stored successfully, {$integrationsError} failed");
+                }
+            }
+
+            // Store pages
+            if (!empty($data['pages'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing pages...');
+                }
+
+                $pagesSuccess = 0;
+                $pagesError = 0;
+                foreach ($data['pages'] as $pageData) {
+                    try {
+                        $this->storePageAction->handle([
+                            'pageData' => $pageData,
+                            'command' => $command
+                        ]);
+                        $pagesSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store page (ID: {$pageData['id']}): " . $e->getMessage());
+                        }
+                        $pagesError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Pages: {$pagesSuccess} stored successfully, {$pagesError} failed");
+                }
+            }
+
+            // Store sections
+            if (!empty($data['sections'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing sections...');
+                }
+
+                $sectionsSuccess = 0;
+                $sectionsError = 0;
+                foreach ($data['sections'] as $sectionData) {
+                    try {
+                        $this->storeSectionAction->handle([
+                            'sectionData' => $sectionData,
+                            'command' => $command
+                        ]);
+                        $sectionsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store section (ID: {$sectionData['id']}): " . $e->getMessage());
+                        }
+                        $sectionsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Sections: {$sectionsSuccess} stored successfully, {$sectionsError} failed");
                 }
             }
 

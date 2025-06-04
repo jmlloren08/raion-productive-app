@@ -34,6 +34,9 @@ use App\Models\ProductiveComment;
 use App\Models\ProductiveDiscussion;
 use App\Models\ProductiveEvent;
 use App\Models\ProductiveExpense;
+use App\Models\ProductiveIntegration;
+use App\Models\ProductivePage;
+use App\Models\ProductiveSection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -90,6 +93,9 @@ class GetSyncStatus extends AbstractAction
                 'discussions' => ProductiveDiscussion::count(),
                 'events' => ProductiveEvent::count(),
                 'expenses' => ProductiveExpense::count(),
+                'integrations' => ProductiveIntegration::count(),
+                'pages' => ProductivePage::count(),
+                'sections' => ProductiveSection::count(),
                 // 'activities_count' => ProductiveActivity::count(),
             ];
 

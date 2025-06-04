@@ -23,14 +23,14 @@ return new class extends Migration
             $table->integer('icon_id')->nullable();
             $table->integer('position')->nullable();
             $table->json('preferences')->nullable();
-            $table->string('title');
+            $table->string('title')->nullable();
             $table->timestamp('updated_at_api')->nullable();
             $table->integer('version_number')->nullable();
             $table->timestamp('last_activity_at')->nullable();
-            $table->json('body');
+            $table->json('body')->nullable();
             $table->integer('parent_page_id')->nullable();
             $table->integer('root_page_id')->nullable();
-            $table->uuid('public_uuid')->nullable();
+            $table->string('public_uuid')->nullable();
             $table->boolean('public')->default(false);
             // Relationships
             $table->string('creator_id')->nullable();

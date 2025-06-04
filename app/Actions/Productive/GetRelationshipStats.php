@@ -27,13 +27,15 @@ use App\Models\ProductiveTeam;
 use App\Models\ProductiveEmail;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductiveInvoiceAttribution;
-use App\Models\ProductiveActivity;
 use App\Models\ProductiveBoard;
 use App\Models\ProductiveBooking;
 use App\Models\ProductiveComment;
 use App\Models\ProductiveDiscussion;
 use App\Models\ProductiveEvent;
 use App\Models\ProductiveExpense;
+use App\Models\ProductiveIntegration;
+use App\Models\ProductivePage;
+use App\Models\ProductiveSection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -268,6 +270,23 @@ class GetRelationshipStats extends AbstractAction
                     'with_tax_rate' => ProductiveExpense::whereNotNull('tax_rate_id')->count(),
                     'with_attachment' => ProductiveExpense::whereNotNull('attachment_id')->count(),
                 ],
+                'integrations' => [
+                    'total' => ProductiveIntegration::count(),
+                    'with_subsidiary' => ProductiveIntegration::whereNotNull('subsidiary_id')->count(),
+                    'with_project' => ProductiveIntegration::whereNotNull('project_id')->count(),
+                    'with_creator' => ProductiveIntegration::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveIntegration::whereNotNull('deal_id')->count(),
+                ],
+                'pages' => [
+                    'total' => ProductivePage::count(),
+                    'with_creator' => ProductivePage::whereNotNull('creator_id')->count(),
+                    'with_project' => ProductivePage::whereNotNull('project_id')->count(),
+                    'with_attachment' => ProductivePage::whereNotNull('attachment_id')->count(),
+                ],
+                'sections' => [
+                    'total' => ProductiveSection::count(),
+                    'with_deal' => ProductiveSection::whereNotNull('deal_id')->count(),
+                ],
                 // 'activities' => [
                 //     'total' => ProductiveActivity::count(),
                 //     'with_creator' => ProductiveActivity::whereNotNull('creator_id')->count(),
@@ -316,6 +335,9 @@ class GetRelationshipStats extends AbstractAction
                 'discussions' => $stats['discussions'],
                 'events' => $stats['events'],
                 'expenses' => $stats['expenses'],
+                'integrations' => $stats['integrations'],
+                'pages' => $stats['pages'],
+                'sections' => $stats['sections'],
                 // 'activities' => $stats['activities']
             ];
         } catch (\Exception $e) {
@@ -355,6 +377,9 @@ class GetRelationshipStats extends AbstractAction
                 'discussions' => ['total' => ProductiveDiscussion::count()],
                 'events' => ['total' => ProductiveEvent::count()],
                 'expenses' => ['total' => ProductiveExpense::count()],
+                'integrations' => ['total' => ProductiveIntegration::count()],
+                'pages' => ['total' => ProductivePage::count()],
+                'sections' => ['total' => ProductiveSection::count()],
                 // 'activities' => ['total' => ProductiveActivity::count()]
             ];
         }

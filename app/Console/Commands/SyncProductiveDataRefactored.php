@@ -26,6 +26,7 @@ use App\Actions\Productive\Fetch\FetchTeams;
 use App\Actions\Productive\Fetch\FetchEmails;
 use App\Actions\Productive\Fetch\FetchInvoices;
 use App\Actions\Productive\Fetch\FetchInvoiceAttributions;
+use App\Actions\Productive\Fetch\FetchSections;
 // use App\Actions\Productive\Fetch\FetchActivities;
 use App\Actions\Productive\Fetch\FetchBoards;
 use App\Actions\Productive\Fetch\FetchBookings;
@@ -33,6 +34,8 @@ use App\Actions\Productive\Fetch\FetchComments;
 use App\Actions\Productive\Fetch\FetchDiscussions;
 use App\Actions\Productive\Fetch\FetchEvents;
 use App\Actions\Productive\Fetch\FetchExpenses;
+use App\Actions\Productive\Fetch\FetchIntegrations;
+use App\Actions\Productive\Fetch\FetchPages;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
 use Illuminate\Console\Command;
@@ -72,6 +75,9 @@ class SyncProductiveDataRefactored extends Command
         'discussions' => [],
         'events' => [],
         'expenses' => [],
+        'integrations' => [],
+        'pages' => [],
+        'sections' => [],
         // 'activities' => []
     ];
 
@@ -106,6 +112,9 @@ class SyncProductiveDataRefactored extends Command
         private FetchDiscussions $fetchDiscussionsAction,
         private FetchEvents $fetchEventsAction,
         private FetchExpenses $fetchExpensesAction,
+        private FetchIntegrations $fetchIntegrationAction,
+        private FetchPages $fetchPagesAction,
+        private FetchSections $fetchSectionsAction,
         private StoreData $storeDataAction,
         private ValidateDataIntegrity $validateDataIntegrityAction
     ) {
@@ -504,6 +513,45 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['expenses'] = $expenses['expenses'];
 
+            // Fetch integrations
+            $integrations = $this->fetchIntegrationAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$integrations['success']) {
+                $this->error('Failed to fetch integrations: ' . ($integrations['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['integrations'] = $integrations['integrations'];
+
+            // Fetch pages
+            $pages = $this->fetchPagesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$pages['success']) {
+                $this->error('Failed to fetch pages: ' . ($pages['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['pages'] = $pages['pages'];
+
+            // Fetch sections
+            $sections = $this->fetchSectionsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$sections['success']) {
+                $this->error('Failed to fetch sections: ' . ($sections['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['sections'] = $sections['sections'];
+
             // Store data in MySQL
             $this->info('Storing data in database...');
             $storageSuccess = $this->storeDataAction->handle([
@@ -554,6 +602,9 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Events synced: ' . count($this->data['events']));
             $this->info('Discussions synced: ' . count($this->data['discussions']));
             $this->info('Expenses synced: ' . count($this->data['expenses']));
+            $this->info('Integrations synced: ' . count($this->data['integrations']));
+            $this->info('Pages synced: ' . count($this->data['pages']));
+            $this->info('Sections synced: ' . count($this->data['sections']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 

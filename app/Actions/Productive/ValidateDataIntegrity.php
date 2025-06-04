@@ -32,6 +32,9 @@ use App\Models\ProductiveComment;
 use App\Models\ProductiveDiscussion;
 use App\Models\ProductiveEvent;
 use App\Models\ProductiveExpense;
+use App\Models\ProductiveIntegration;
+use App\Models\ProductivePage;
+use App\Models\ProductiveSection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -257,6 +260,23 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_purchase_order' => ProductiveExpense::whereNotNull('purchase_order_id')->count(),
                     'with_tax_rate' => ProductiveExpense::whereNotNull('tax_rate_id')->count(),
                     'with_attachment' => ProductiveExpense::whereNotNull('attachment_id')->count(),
+                ],
+                'integrations' => [
+                    'total' => ProductiveIntegration::count(),
+                    'with_subsidiary' => ProductiveIntegration::whereNotNull('subsidiary_id')->count(),
+                    'with_project' => ProductiveIntegration::whereNotNull('project_id')->count(),
+                    'with_creator' => ProductiveIntegration::whereNotNull('creator_id')->count(),
+                    'with_deal' => ProductiveIntegration::whereNotNull('deal_id')->count(),
+                ],
+                'pages' => [
+                    'total' => ProductivePage::count(),
+                    'with_creator' => ProductivePage::whereNotNull('creator_id')->count(),
+                    'with_project' => ProductivePage::whereNotNull('project_id')->count(),
+                    'with_attachment' => ProductivePage::whereNotNull('attachment_id')->count(),
+                ],
+                'sections' => [
+                    'total' => ProductiveSection::count(),
+                    'with_deal' => ProductiveSection::whereNotNull('deal_id')->count(),
                 ],
                 // 'activities' => [
                 //     'total' => ProductiveActivity::count(),
@@ -503,6 +523,26 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Purchase Order: {$stats['expenses']['with_purchase_order']}");
                 $command->info("- With Tax Rate: {$stats['expenses']['with_tax_rate']}");
                 $command->info("- With Attachment: {$stats['expenses']['with_attachment']}");
+
+                // Integrations
+                $command->info("\nIntegrations:");
+                $command->info("- Total: {$stats['integrations']['total']}");
+                $command->info("- With Subsidiary: {$stats['integrations']['with_subsidiary']}");
+                $command->info("- With Project: {$stats['integrations']['with_project']}");
+                $command->info("- With Creator: {$stats['integrations']['with_creator']}");
+                $command->info("- With Deal: {$stats['integrations']['with_deal']}");
+
+                // Pages
+                $command->info("\nPages:");
+                $command->info("- Total: {$stats['pages']['total']}");
+                $command->info("- With Creator: {$stats['pages']['with_creator']}");
+                $command->info("- With Project: {$stats['pages']['with_project']}");
+                $command->info("- With Attachment: {$stats['pages']['with_attachment']}");
+
+                // Sections
+                $command->info("\nSections:");
+                $command->info("- Total: {$stats['sections']['total']}");
+                $command->info("- With Deal: {$stats['sections']['with_deal']}");
 
                 // Activities
                 // $command->info("\nActivities:");
