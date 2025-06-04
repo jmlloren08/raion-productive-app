@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productive_projects', function (Blueprint $table) {
             // Primary key
-            $table->string('id')->primary();
+            $table->unsignedBigInteger('id')->primary();
             $table->string('type')->default('projects'); // type of project, e.g., 'project', 'task', etc.
             // Core attributes
             $table->string('name');
