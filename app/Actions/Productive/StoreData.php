@@ -35,6 +35,8 @@ use App\Actions\Productive\Store\StoreExpense;
 use App\Actions\Productive\Store\StoreIntegration;
 use App\Actions\Productive\Store\StorePage;
 use App\Actions\Productive\Store\StoreSection;
+use App\Actions\Productive\Store\StoreTimeEntry;
+use App\Actions\Productive\Store\StoreTimeEntryVersion;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -60,6 +62,8 @@ class StoreData extends AbstractAction
     public function __construct(
         private StoreProject $storeProjectAction,
         private StoreCompany $storeCompanyAction,
+        private StoreTimeEntry $storeTimeEntryAction,
+        private StoreTimeEntryVersion $storeTimeEntryVersionAction,
         private StoreSubsidiary $storeSubsidiaryAction,
         private StoreTaxRate $storeTaxRateAction,
         private StoreDocumentStyle $storeDocumentStyleAction,
@@ -125,20 +129,41 @@ class StoreData extends AbstractAction
 
             // First validate that we have data to store
             if (
-                empty($data['companies']) && empty($data['projects']) &&
-                empty($data['people']) && empty($data['workflows']) &&
-                empty($data['deals']) && empty($data['document_types']) &&
-                empty($data['contact_entries']) && empty($data['subsidiaries']) &&
-                empty($data['tax_rates']) && empty($data['document_styles']) &&
-                empty($data['deal_statuses']) && empty($data['lost_reasons']) &&
-                empty($data['contracts']) && empty($data['purchase_orders']) &&
-                empty($data['approval_policy_assignments']) && empty($data['pipelines']) &&
-                empty($data['attachments']) && empty($data['bills']) &&
-                empty($data['teams']) && empty($data['emails']) &&
-                empty($data['invoices']) && empty($data['invoice_attributions']) &&
-                empty($data['boards']) && empty($data['bookings']) && empty($data['comments']) &&
-                empty($data['discussions']) && empty($data['expenses']) &&
-                empty($data['integrations']) && empty($data['pages']) && empty($data['sections'])
+                empty($data['companies']) &&
+                empty($data['projects']) &&
+                empty($data['time_entries']) &&
+                empty($data['time_entry_versions']) &&
+                empty($data['document_styles']) &&
+                empty($data['document_types']) &&
+                empty($data['people']) &&
+                empty($data['tax_rates']) &&
+                empty($data['subsidiaries']) &&
+                empty($data['workflows']) &&
+                empty($data['contact_entries']) &&
+                empty($data['lost_reasons']) &&
+                empty($data['[pipeline]']) &&
+                empty($data['deal_statuses']) &&
+                empty($data['deal_statuses']) &&
+                empty($data['approval_policies']) &&
+                empty($data['approval_policy_assignments']) &&
+                empty($data['contracts']) &&
+                empty($data['deals']) &&
+                empty($data['purchase_orders']) &&
+                empty($data['emails']) &&
+                empty($data['bills']) &&
+                empty($data['attachments']) &&
+                empty($data['teams']) &&
+                empty($data['invoices']) &&
+                empty($data['invoice_attributions']) &&
+                empty($data['boards']) &&
+                empty($data['bookings']) &&
+                empty($data['comments']) &&
+                empty($data['discussions']) &&
+                empty($data['events']) &&
+                empty($data['expenses']) &&
+                empty($data['integrations']) &&
+                empty($data['pages']) &&
+                empty($data['sections'])
             ) {
                 if ($command instanceof Command) {
                     $command->warn('No data fetched from Productive API. Skipping storage.');
@@ -1010,6 +1035,62 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Sections: {$sectionsSuccess} stored successfully, {$sectionsError} failed");
+                }
+            }
+
+            // Store time entries
+            if (!empty($data['time_entries'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing time entries...');
+                }
+
+                $timeEntriesSuccess = 0;
+                $timeEntriesError = 0;
+                foreach ($data['time_entries'] as $timeEntryData) {
+                    try {
+                        $this->storeTimeEntryAction->handle([
+                            'timeEntryData' => $timeEntryData,
+                            'command' => $command
+                        ]);
+                        $timeEntriesSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store time entry (ID: {$timeEntryData['id']}): " . $e->getMessage());
+                        }
+                        $timeEntriesError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Time Entries: {$timeEntriesSuccess} stored successfully, {$timeEntriesError} failed");
+                }
+            }
+
+            // Store time entry versions
+            if (!empty($data['time_entry_versions'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing time entry versions...');
+                }
+
+                $timeEntryVersionsSuccess = 0;
+                $timeEntryVersionsError = 0;
+                foreach ($data['time_entry_versions'] as $timeEntryVersionData) {
+                    try {
+                        $this->storeTimeEntryVersionAction->handle([
+                            'timeEntryVersionData' => $timeEntryVersionData,
+                            'command' => $command
+                        ]);
+                        $timeEntryVersionsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store time entry version (ID: {$timeEntryVersionData['id']}): " . $e->getMessage());
+                        }
+                        $timeEntryVersionsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Time Entry Versions: {$timeEntryVersionsSuccess} stored successfully, {$timeEntryVersionsError} failed");
                 }
             }
 

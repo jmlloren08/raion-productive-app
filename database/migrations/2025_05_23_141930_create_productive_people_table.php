@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('productive_people', function (Blueprint $table) {
             // Primary key
             $table->unsignedBigInteger('id')->primary();
-            $table->string('type')->default('people'); // type of person, e.g., 'user', 'client',
+            $table->string('type')->default('people');
             // Core attributes
             $table->string('avatar_url')->nullable();
             $table->json('contact')->nullable();

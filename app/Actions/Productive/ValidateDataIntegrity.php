@@ -35,6 +35,7 @@ use App\Models\ProductiveExpense;
 use App\Models\ProductiveIntegration;
 use App\Models\ProductivePage;
 use App\Models\ProductiveSection;
+use App\Models\ProductiveTimeEntry;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -62,13 +63,31 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_default_subsidiary' => ProductiveCompany::whereNotNull('default_subsidiary_id')->count(),
                     'with_default_tax_rate' => ProductiveCompany::whereNotNull('default_tax_rate_id')->count(),
                 ],
-
                 'projects' => [
                     'total' => ProductiveProject::count(),
                     'with_company' => ProductiveProject::whereNotNull('company_id')->count(),
                     'with_project_manager' => ProductiveProject::whereNotNull('project_manager_id')->count(),
                     'with_last_actor' => ProductiveProject::whereNotNull('last_actor_id')->count(),
                     'with_workflow' => ProductiveProject::whereNotNull('workflow_id')->count(),
+                ],
+                'time_entries' => [
+                    'total' => ProductiveTimeEntry::count(),
+                    'with_person' => ProductiveTimeEntry::whereNotNull('person_id')->count(),
+                    'with_service' => ProductiveTimeEntry::whereNotNull('service_id')->count(),
+                    'with_task' => ProductiveTimeEntry::whereNotNull('task_id')->count(),
+                    'with_deal' => ProductiveTimeEntry::whereNotNull('deal_id')->count(),
+                    'with_approver' => ProductiveTimeEntry::whereNotNull('approver_id')->count(),
+                    'with_updater' => ProductiveTimeEntry::whereNotNull('updater_id')->count(),
+                    'with_rejecter' => ProductiveTimeEntry::whereNotNull('rejecter_id')->count(),
+                    'with_creator' => ProductiveTimeEntry::whereNotNull('creator_id')->count(),
+                    'with_last_actor' => ProductiveTimeEntry::whereNotNull('last_actor_id')->count(),
+                    'with_person_subsidiary' => ProductiveTimeEntry::whereNotNull('person_subsidiary_id')->count(),
+                    'with_deal_subsidiary' => ProductiveTimeEntry::whereNotNull('deal_subsidiary_id')->count(),
+                    'with_timesheet' => ProductiveTimeEntry::whereNotNull('timesheet_id')->count(),
+                ],
+                'time_entry_versions' => [
+                    'total' => ProductiveTimeEntry::count(),
+                    'with_creator' => ProductiveTimeEntry::whereNotNull('creator_id')->count(),
                 ],
                 'people' => [
                     'total' => ProductivePeople::count(),
@@ -305,6 +324,27 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("- With Project Manager: {$stats['projects']['with_project_manager']}");
                 $command->info("- With Last Actor: {$stats['projects']['with_last_actor']}");
                 $command->info("- With Workflow: {$stats['projects']['with_workflow']}");
+
+                // Time Entries
+                $command->info("\nTime Entries:");
+                $command->info("- Total: {$stats['time_entries']['total']}");
+                $command->info("- With Person: {$stats['time_entries']['with_person']}");
+                $command->info("- With Service: {$stats['time_entries']['with_service']}");
+                $command->info("- With Task: {$stats['time_entries']['with_task']}");
+                $command->info("- With Deal: {$stats['time_entries']['with_deal']}");
+                $command->info("- With Approver: {$stats['time_entries']['with_approver']}");
+                $command->info("- With Updater: {$stats['time_entries']['with_updater']}");
+                $command->info("- With Rejecter: {$stats['time_entries']['with_rejecter']}");
+                $command->info("- With Creator: {$stats['time_entries']['with_creator']}");
+                $command->info("- With Last Actor: {$stats['time_entries']['with_last_actor']}");
+                $command->info("- With Person Subsidiary: {$stats['time_entries']['with_person_subsidiary']}");
+                $command->info("- With Deal Subsidiary: {$stats['time_entries']['with_deal_subsidiary']}");
+                $command->info("- With Timesheet: {$stats['time_entries']['with_timesheet']}");
+
+                // Time Entry Versions
+                $command->info("\nTime Entry Versions:");
+                $command->info("- Total: {$stats['time_entry_versions']['total']}");
+                $command->info("- With Creator: {$stats['time_entry_versions']['with_creator']}");
 
                 // People
                 $command->info("\nPeople:");

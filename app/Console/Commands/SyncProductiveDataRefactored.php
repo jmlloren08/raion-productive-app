@@ -36,6 +36,8 @@ use App\Actions\Productive\Fetch\FetchEvents;
 use App\Actions\Productive\Fetch\FetchExpenses;
 use App\Actions\Productive\Fetch\FetchIntegrations;
 use App\Actions\Productive\Fetch\FetchPages;
+use App\Actions\Productive\FetchTimeEntries;
+use App\Actions\Productive\FetchTimeEntryVersions;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
 use Illuminate\Console\Command;
@@ -48,6 +50,8 @@ class SyncProductiveDataRefactored extends Command
     private $data = [
         'companies' => [],
         'projects' => [],
+        'time_entries' => [],
+        'time_entry_versions' => [],
         'people' => [],
         'workflows' => [],
         'deals' => [],
@@ -85,6 +89,8 @@ class SyncProductiveDataRefactored extends Command
         private InitializeClient $initializeClientAction,
         private FetchCompanies $fetchCompaniesAction,
         private FetchProjects $fetchProjectsAction,
+        private FetchTimeEntries $fetchTimeEntriesAction,
+        private FetchTimeEntryVersions $fetchTimeEntryVersionsAction,
         private FetchPeople $fetchPeopleAction,
         private FetchWorkflows $fetchWorkflowsAction,
         private FetchDeals $fetchDealsAction,
@@ -552,6 +558,32 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['sections'] = $sections['sections'];
 
+            // Fetch time entries
+            $timeEntries = $this->fetchTimeEntriesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$timeEntries['success']) {
+                $this->error('Failed to fetch time entries: ' . ($timeEntries['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['time_entries'] = $timeEntries['time_entries'];
+
+            // Fetch time entry versions
+            $timeEntryVersions = $this->fetchTimeEntryVersionsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$timeEntryVersions['success']) {
+                $this->error('Failed to fetch time entry versions: ' . ($timeEntryVersions['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['time_entry_versions'] = $timeEntryVersions['time_entry_versions'];
+
             // Store data in MySQL
             $this->info('Storing data in database...');
             $storageSuccess = $this->storeDataAction->handle([
@@ -605,6 +637,8 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Integrations synced: ' . count($this->data['integrations']));
             $this->info('Pages synced: ' . count($this->data['pages']));
             $this->info('Sections synced: ' . count($this->data['sections']));
+            $this->info('Time Entries synced: ' . count($this->data['time_entries']));
+            $this->info('Time Entry Versions synced: ' . count($this->data['time_entry_versions']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 

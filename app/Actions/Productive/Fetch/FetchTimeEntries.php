@@ -4,6 +4,7 @@ namespace App\Actions\Productive;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class FetchTimeEntries extends AbstractAction
 {
@@ -175,6 +176,8 @@ class FetchTimeEntries extends AbstractAction
             if ($command instanceof Command) {
                 $command->error("Error in time entries fetch process: " . $e->getMessage());
             }
+
+            Log::error("Error in time entries fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
