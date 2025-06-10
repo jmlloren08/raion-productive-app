@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Actions\Productive;
+namespace App\Actions\Productive\Fetch;
 
+use App\Actions\Productive\AbstractAction;
+use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class FetchTimeEntries extends AbstractAction
@@ -56,10 +57,10 @@ class FetchTimeEntries extends AbstractAction
      */
     public function handle(array $parameters = []): array
     {
-        $client = $parameters['client'] ?? null;
         $command = $parameters['command'] ?? null;
+        $apiClient = $parameters['apiClient'] ?? null;
 
-        if (!$client) {
+        if (!$apiClient) {
             return [
                 'success' => false,
                 'time_entries' => [],
@@ -81,7 +82,7 @@ class FetchTimeEntries extends AbstractAction
             while ($hasMorePages) {
                 try {
                     // Following Productive API docs for time entries
-                    $response = $client->get("time_entries", [
+                    $response = $apiClient->get("time_entries", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
@@ -89,6 +90,10 @@ class FetchTimeEntries extends AbstractAction
                         ],
                         'sort' => '-date' // Newest first
                     ])->throw();
+
+                    if(!$response->successful()) {
+                        throw new \Exception("Failed to fetch time entries: " . $response->body());
+                    }
 
                     $responseBody = $response->json();
 

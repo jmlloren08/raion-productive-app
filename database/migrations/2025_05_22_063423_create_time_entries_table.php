@@ -28,7 +28,7 @@ return new class extends Migration
             $table->boolean('approved')->nullable();
             $table->datetime('approved_at')->nullable();
             $table->timestamp('updated_at_api')->nullable();
-            $table->unsignedBigInteger('calendar_event_id')->nullable();
+            $table->text('calendar_event_id')->nullable();
             $table->foreignId('invoice_attribution_id')->nullable();
             $table->boolean('invoiced')->nullable();
             $table->boolean('overhead')->nullable();

@@ -7,15 +7,19 @@ use App\Actions\Productive\ProcessIncludedData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class FetchTimeEntryVersions extends AbstractAction
+class FetchCustomFields extends AbstractAction
 {
     /**
-     * Define include relationships for time entry versions
+     * Define include relationships for custom fields
      * 
      * @var array
      */
     protected array $includeRelationships = [
-        'creator'
+        'project',
+        'section',
+        'survey',
+        'custom_field_people',
+        'options',
     ];
 
     /**
@@ -24,12 +28,16 @@ class FetchTimeEntryVersions extends AbstractAction
      * @var array
      */
     protected array $fallbackIncludes = [
-        ['creator'],
+        ['project'],
+        ['section'],
+        ['survey'],
+        ['custom_field_people'],
+        ['options'],
         []  // Empty array means no includes
     ];
 
     /**
-     * Fetch time entry versions from the Productive API
+     * Fetch custom fields from the Productive API
      *
      * @param array $parameters
      * @return array
@@ -42,17 +50,17 @@ class FetchTimeEntryVersions extends AbstractAction
         if (!$apiClient) {
             return [
                 'success' => false,
-                'time_entry_versions' => [],
+                'custom_fields' => [],
                 'error' => 'Client not provided'
             ];
         }
 
         try {
             if ($command instanceof Command) {
-                $command->info('Fetching time entry versions...');
+                $command->info('Fetching custom fields...');
             }
 
-            $allTimeEntryVersions = [];
+            $allCustomFields = [];
             $page = 1;
             $pageSize = 100;
             $hasMorePages = true;
@@ -60,18 +68,16 @@ class FetchTimeEntryVersions extends AbstractAction
 
             while ($hasMorePages) {
                 try {
-                    // Following Productive API docs for time entry versions
-                    $response = $apiClient->get("time_entry_versions", [
+                    $response = $apiClient->get("custom_fields", [
                         'include' => $includeParam,
                         'page' => [
                             'number' => $page,
                             'size' => $pageSize
                         ],
-                        'sort' => '-created_at' // Newest first
                     ])->throw();
 
-                    if(!$response->successful()) {
-                        throw new \Exception("Failed to fetch time entry versions: " . $response->body());
+                    if (!$response->successful()) {
+                        throw new \Exception("Failed to fetch custom fields: " . $response->body());
                     }
 
                     $responseBody = $response->json();
@@ -83,22 +89,22 @@ class FetchTimeEntryVersions extends AbstractAction
                         }
                         return [
                             'success' => false,
-                            'time_entry_versions' => [],
+                            'custom_fields' => [],
                             'error' => "Invalid API response format on page {$page}"
                         ];
                     }
 
-                    $timeEntryVersions = $responseBody['data'];
+                    $customFields = $responseBody['data'];
 
                     // Process included data if available
                     $processIncludedAction = new ProcessIncludedData();
-                    $timeEntryVersions = $processIncludedAction->handle([
+                    $customFields = $processIncludedAction->handle([
                         'responseBody' => $responseBody,
-                        'resources' => $timeEntryVersions,
+                        'resources' => $customFields,
                         'command' => $command
                     ]);
 
-                    $allTimeEntryVersions = array_merge($allTimeEntryVersions, $timeEntryVersions);
+                    $allCustomFields = array_merge($allCustomFields, $customFields);
 
                     // Debug logging for included data
                     if ($command instanceof Command && isset($responseBody['included']) && is_array($responseBody['included'])) {
@@ -106,21 +112,21 @@ class FetchTimeEntryVersions extends AbstractAction
                     }
 
                     // Check if we need to fetch more pages
-                    if (count($timeEntryVersions) < $pageSize) {
+                    if (count($customFields) < $pageSize) {
                         $hasMorePages = false;
                     } else {
                         $page++;
                         if ($command instanceof Command) {
-                            $command->info("Fetching time entry versions page {$page}...");
+                            $command->info("Fetching custom fields page {$page}...");
                         }
                     }
 
                     if ($command instanceof Command) {
-                        $command->info("Fetched " . count($timeEntryVersions) . " versions from page " . ($page - 1));
+                        $command->info("Fetched " . count($customFields) . " custom fields from page " . ($page - 1));
                     }
                 } catch (\Exception $e) {
                     if ($command instanceof Command) {
-                        $command->error("Failed to fetch time entry versions page {$page}: " . $e->getMessage());
+                        $command->error("Failed to fetch custom fields page {$page}: " . $e->getMessage());
                     }
 
                     // If 'include' parameter is causing problems, try with fallback includes
@@ -138,53 +144,53 @@ class FetchTimeEntryVersions extends AbstractAction
 
                     return [
                         'success' => false,
-                        'time_entry_versions' => [],
-                        'error' => 'Error fetching time entry versions page ' . $page . ': ' . $e->getMessage()
+                        'custom_fields' => [],
+                        'error' => 'Error fetching custom fields page ' . $page . ': ' . $e->getMessage()
                     ];
                 }
             }
 
             if ($command instanceof Command) {
-                $command->info('Found ' . count($allTimeEntryVersions) . ' time entry versions in total');
+                $command->info('Found ' . count($allCustomFields) . ' custom fields in total');
 
                 // Calculate and log relationship stats
-                $relationshipStats = $this->calculateRelationshipStats($allTimeEntryVersions);
-                $this->logRelationshipStats($relationshipStats, count($allTimeEntryVersions), $command);
+                $relationshipStats = $this->calculateRelationshipStats($allCustomFields);
+                $this->logRelationshipStats($relationshipStats, count($allCustomFields), $command);
             }
 
             return [
                 'success' => true,
-                'time_entry_versions' => $allTimeEntryVersions
+                'custom_fields' => $allCustomFields
             ];
         } catch (\Exception $e) {
             if ($command instanceof Command) {
-                $command->error("Error in time entry versions fetch process: " . $e->getMessage());
+                $command->error("Error in custom fields fetch process: " . $e->getMessage());
             }
 
-            Log::error("Error in time entry versions fetch process: " . $e->getMessage());
+            Log::error("Error in custom fields fetch process: " . $e->getMessage());
 
             return [
                 'success' => false,
-                'time_entry_versions' => [],
-                'error' => 'Error in time entry versions fetch process: ' . $e->getMessage()
+                'custom_fields' => [],
+                'error' => 'Error in custom fields fetch process: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Calculate relationship statistics for versions
+     * Calculate relationship statistics for custom fields
      *
-     * @param array $versions
+     * @param array $customFields
      * @return array
      */
-    protected function calculateRelationshipStats(array $versions): array
+    protected function calculateRelationshipStats(array $customFields): array
     {
         $stats = array_fill_keys($this->includeRelationships, 0);
 
-        foreach ($versions as $version) {
-            if (isset($version['relationships'])) {
+        foreach ($customFields as $field) {
+            if (isset($field['relationships'])) {
                 foreach ($this->includeRelationships as $relationship) {
-                    if (isset($version['relationships'][$relationship]['data']['id'])) {
+                    if (isset($field['relationships'][$relationship]['data']['id'])) {
                         $stats[$relationship]++;
                     }
                 }
@@ -198,16 +204,16 @@ class FetchTimeEntryVersions extends AbstractAction
      * Log relationship statistics to the command output
      *
      * @param array $stats
-     * @param int $totalVersions
+     * @param int $totalFields
      * @param Command $command
      * @return void
      */
-    protected function logRelationshipStats(array $stats, int $totalVersions, Command $command): void
+    protected function logRelationshipStats(array $stats, int $totalFields, Command $command): void
     {
-        if ($totalVersions > 0) {
+        if ($totalFields > 0) {
             foreach ($stats as $relationship => $count) {
-                $percentage = round(($count / $totalVersions) * 100, 2);
-                $command->info("Versions with {$relationship} relationship: {$count} ({$percentage}%)");
+                $percentage = round(($count / $totalFields) * 100, 2);
+                $command->info("Custom fields with {$relationship} relationship: {$count} ({$percentage}%)");
             }
         }
     }

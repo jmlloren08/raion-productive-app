@@ -37,6 +37,8 @@ use App\Actions\Productive\Store\StorePage;
 use App\Actions\Productive\Store\StoreSection;
 use App\Actions\Productive\Store\StoreTimeEntry;
 use App\Actions\Productive\Store\StoreTimeEntryVersion;
+use App\Actions\Productive\Store\StoreCustomField;
+use App\Actions\Productive\Store\StoreCustomFieldOption;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -94,6 +96,8 @@ class StoreData extends AbstractAction
         private StoreIntegration $storeIntegrationAction,
         private StorePage $storePageAction,
         private StoreSection $storeSectionAction,
+        private StoreCustomField $storeCustomFieldAction,
+        private StoreCustomFieldOption $storeCustomFieldOptionAction,
     ) {}
 
     /**
@@ -131,8 +135,6 @@ class StoreData extends AbstractAction
             if (
                 empty($data['companies']) &&
                 empty($data['projects']) &&
-                empty($data['time_entries']) &&
-                empty($data['time_entry_versions']) &&
                 empty($data['document_styles']) &&
                 empty($data['document_types']) &&
                 empty($data['people']) &&
@@ -1035,62 +1037,6 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Sections: {$sectionsSuccess} stored successfully, {$sectionsError} failed");
-                }
-            }
-
-            // Store time entries
-            if (!empty($data['time_entries'])) {
-                if ($command instanceof Command) {
-                    $command->info('Storing time entries...');
-                }
-
-                $timeEntriesSuccess = 0;
-                $timeEntriesError = 0;
-                foreach ($data['time_entries'] as $timeEntryData) {
-                    try {
-                        $this->storeTimeEntryAction->handle([
-                            'timeEntryData' => $timeEntryData,
-                            'command' => $command
-                        ]);
-                        $timeEntriesSuccess++;
-                    } catch (\Exception $e) {
-                        if ($command instanceof Command) {
-                            $command->error("Failed to store time entry (ID: {$timeEntryData['id']}): " . $e->getMessage());
-                        }
-                        $timeEntriesError++;
-                    }
-                }
-
-                if ($command instanceof Command) {
-                    $command->info("Time Entries: {$timeEntriesSuccess} stored successfully, {$timeEntriesError} failed");
-                }
-            }
-
-            // Store time entry versions
-            if (!empty($data['time_entry_versions'])) {
-                if ($command instanceof Command) {
-                    $command->info('Storing time entry versions...');
-                }
-
-                $timeEntryVersionsSuccess = 0;
-                $timeEntryVersionsError = 0;
-                foreach ($data['time_entry_versions'] as $timeEntryVersionData) {
-                    try {
-                        $this->storeTimeEntryVersionAction->handle([
-                            'timeEntryVersionData' => $timeEntryVersionData,
-                            'command' => $command
-                        ]);
-                        $timeEntryVersionsSuccess++;
-                    } catch (\Exception $e) {
-                        if ($command instanceof Command) {
-                            $command->error("Failed to store time entry version (ID: {$timeEntryVersionData['id']}): " . $e->getMessage());
-                        }
-                        $timeEntryVersionsError++;
-                    }
-                }
-
-                if ($command instanceof Command) {
-                    $command->info("Time Entry Versions: {$timeEntryVersionsSuccess} stored successfully, {$timeEntryVersionsError} failed");
                 }
             }
 

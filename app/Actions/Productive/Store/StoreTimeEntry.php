@@ -251,7 +251,7 @@ class StoreTimeEntry extends AbstractAction
             'timer_stopped_at' => 'nullable|date',
             'approved' => 'nullable|boolean',
             'approved_at' => 'nullable|date',
-            'calendar_event_id' => 'nullable|integer',
+            'calendar_event_id' => 'nullable|string',
             'invoice_attribution_id' => 'nullable|integer',
             'invoiced' => 'nullable|boolean',
             'overhead' => 'nullable|boolean',
