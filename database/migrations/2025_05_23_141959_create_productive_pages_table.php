@@ -39,7 +39,6 @@ return new class extends Migration
             $table->json('template_object')->nullable();
 
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

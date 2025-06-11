@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('productive_custom_field_values', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('project_id');
+            $table->unsignedBigInteger('entity_id'); // Changed from project_id to entity_id for polymorphic relationship
+            $table->string('entity_type'); // Added to support polymorphic relationships
+            // Original columns
             $table->unsignedBigInteger('custom_field_id');
             $table->unsignedBigInteger('custom_field_option_id')->nullable();
             $table->string('custom_field_name');
@@ -21,16 +23,13 @@ return new class extends Migration
             $table->string('raw_value')->nullable(); // Store the original value from the API
             
             // Add foreign key constraints
-            $table->foreign('project_id')->references('id')->on('productive_projects');
             $table->foreign('custom_field_id')->references('id')->on('productive_custom_fields');
             $table->foreign('custom_field_option_id')->references('id')->on('productive_cfos');
             
             // Add indexes for better query performance
-            $table->index(['project_id', 'custom_field_id']);
+            $table->index(['entity_id', 'entity_type']);
             $table->index('custom_field_name');
-            
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

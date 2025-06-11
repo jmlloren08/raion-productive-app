@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveCfo extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_cfos';
 
     public $incrementing = false;

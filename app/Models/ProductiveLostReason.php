@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveLostReason extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_lost_reasons';
 
     public $incrementing = false;

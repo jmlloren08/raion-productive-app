@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductiveContactEntry extends Model
 {
-    use SoftDeletes;
-    
     protected $table = 'productive_contact_entries';
 
     public $incrementing = false;

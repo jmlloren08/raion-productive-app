@@ -39,8 +39,7 @@ return new class extends Migration
             $table->unsignedBigInteger('last_actor_id')->nullable();
             $table->unsignedBigInteger('workflow_id')->nullable();
             
-            $table->timestamps(); // Laravel's created_at and updated_at
-            $table->softDeletes();
+            $table->timestamps();
         });
     }
 

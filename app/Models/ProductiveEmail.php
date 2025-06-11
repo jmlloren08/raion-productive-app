@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveEmail extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_emails';
 
     public $incrementing = false;

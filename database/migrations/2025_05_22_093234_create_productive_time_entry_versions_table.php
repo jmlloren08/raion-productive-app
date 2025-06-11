@@ -27,7 +27,6 @@ return new class extends Migration
             $table->unsignedBigInteger('creator_id')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

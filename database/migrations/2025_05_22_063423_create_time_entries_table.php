@@ -56,9 +56,6 @@ return new class extends Migration
             $table->unsignedBigInteger('timesheet_id')->nullable();
 
             $table->timestamps();
-
-            // Soft delete support
-            $table->softDeletes();
         });
     }
 

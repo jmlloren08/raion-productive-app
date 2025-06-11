@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('type')->default('task_lists'); // type of task list, e.g., 'project', 'task', etc.
             // Core attributes
             $table->string('name');
-            $table->integer('position')->default(1);
-            $table->integer('placement')->default(1010000);
+            $table->integer('position')->nullable();
+            $table->integer('placement');
             $table->timestamp('archived_at')->nullable();
             $table->string('email_key');
             // Relationships
@@ -26,7 +26,6 @@ return new class extends Migration
             $table->unsignedBigInteger('board_id')->nullable();
             
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

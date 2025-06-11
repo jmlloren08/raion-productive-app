@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveDeal extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_deals';
 
     public $incrementing = false;
@@ -62,7 +60,7 @@ class ProductiveDeal extends Model
         'closed_at',
         'delivered_on',
         'last_activity_at',
-        'deleted_at',
+        'deleted_at_api',
         'created_at_api',
         'sales_closed_at',
         'exchange_rate',

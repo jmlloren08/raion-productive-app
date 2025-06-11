@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveInvoiceAttribution extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_invoice_attributions';
 
     public $incrementing = false;

@@ -23,7 +23,6 @@ return new class extends Migration
             $table->unsignedBigInteger('page_id')->nullable();
             
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

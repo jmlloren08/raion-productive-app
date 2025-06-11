@@ -24,7 +24,6 @@ return new class extends Migration
             $table->unsignedBigInteger('custom_field_id')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

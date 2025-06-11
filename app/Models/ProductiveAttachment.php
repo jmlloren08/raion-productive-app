@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveAttachment extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_attachments';
 
     public $incrementing = false;

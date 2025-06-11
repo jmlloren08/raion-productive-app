@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductivePipeline extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_pipelines';
 
     public $incrementing = false;

@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveDocumentStyle extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_document_styles';
 
     public $incrementing = false;

@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveWorkflow extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_workflows';
 
     public $incrementing = false;

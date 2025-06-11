@@ -52,7 +52,6 @@ return new class extends Migration
             $table->json('roles')->nullable(); // e.g., ["admin", "user"]
             
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

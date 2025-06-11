@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveProject extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_projects';
     
     public $incrementing = false;

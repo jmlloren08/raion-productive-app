@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveCustomField extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_custom_fields';
 
     public $incrementing = false;

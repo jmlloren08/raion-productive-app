@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductiveTimeEntryVersion extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_time_entry_versions';
 
     public $incrementing = false;

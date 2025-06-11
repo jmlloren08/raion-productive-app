@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveComment extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_comments';
 
     public $incrementing = false;

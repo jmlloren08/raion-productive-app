@@ -24,7 +24,6 @@ return new class extends Migration
             $table->integer('type_id')->default(0);
 
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

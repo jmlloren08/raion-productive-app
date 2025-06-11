@@ -26,7 +26,6 @@ return new class extends Migration
             $table->unsignedBigInteger('payment_reminder_id')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

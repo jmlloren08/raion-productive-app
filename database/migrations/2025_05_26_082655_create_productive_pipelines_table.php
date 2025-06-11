@@ -28,7 +28,6 @@ return new class extends Migration
             $table->unsignedBigInteger('updater_id')->nullable();
             
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
