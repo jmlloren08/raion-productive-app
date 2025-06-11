@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveCustomFieldValue extends Model
 {
-    use SoftDeletes;
 
     protected $fillable = [
-        'project_id',
+        'entity_id',
+        'entity_type',
         'custom_field_id',
         'custom_field_option_id',
         'custom_field_name',
@@ -19,11 +18,11 @@ class ProductiveCustomFieldValue extends Model
     ];
 
     /**
-     * Get the project that owns the custom field value.
+     * Get the owning entity model.
      */
-    public function project()
+    public function entity()
     {
-        return $this->belongsTo(ProductiveProject::class, 'project_id');
+        return $this->morphTo();
     }
 
     /**
