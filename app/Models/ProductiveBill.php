@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveBill extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_bills';
 
     public $incrementing = false;

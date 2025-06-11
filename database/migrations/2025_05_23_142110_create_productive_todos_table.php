@@ -22,7 +22,7 @@ return new class extends Migration
             $table->date('due_date')->nullable();
             $table->timestamp('created_at_api')->nullable(); // renamed to prevent conflict with Laravel's own timestamps
             $table->string('todoable_type');
-            $table->time('due_time')->nullable();
+            $table->string('due_time')->nullable();
             $table->integer('position')->default(0);
             // Relationships
             $table->unsignedBigInteger('assignee_id')->nullable();
@@ -30,7 +30,6 @@ return new class extends Migration
             $table->unsignedBigInteger('task_id')->nullable();
             
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

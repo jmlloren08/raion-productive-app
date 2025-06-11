@@ -27,7 +27,6 @@ return new class extends Migration
             $table->unsignedBigInteger('deal_id')->nullable(); // JSON field for template data
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

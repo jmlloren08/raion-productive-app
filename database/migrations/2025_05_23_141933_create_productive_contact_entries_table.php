@@ -36,7 +36,6 @@ return new class extends Migration
             $table->unsignedBigInteger('purchase_order_id')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

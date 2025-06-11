@@ -38,6 +38,9 @@ use App\Models\ProductiveSection;
 use App\Models\ProductiveTimeEntry;
 use App\Models\ProductiveCustomField;
 use App\Models\ProductiveCfo;
+use App\Models\ProductiveTaskList;
+use App\Models\ProductiveTask;
+use App\Models\ProductiveTodo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -310,6 +313,28 @@ class ValidateDataIntegrity extends AbstractAction
                 'custom_field_options' => [
                     'total' => ProductiveCfo::count(),
                     'with_custom_field' => ProductiveCfo::whereNotNull('custom_field_id')->count(),
+                ],
+                'task_lists' => [
+                    'total' => ProductiveTaskList::count(),
+                    'with_project' => ProductiveTaskList::whereNotNull('project_id')->count(),
+                    'with_board' => ProductiveTaskList::whereNotNull('board_id')->count(),
+                ],
+                'tasks' => [
+                    'total' => ProductiveTask::count(),
+                    'with_project' => ProductiveTask::whereNotNull('project_id')->count(),
+                    'with_creator' => ProductiveTask::whereNotNull('creator_id')->count(),
+                    'with_assignee' => ProductiveTask::whereNotNull('assignee_id')->count(),
+                    'with_last_actor' => ProductiveTask::whereNotNull('last_actor_id')->count(),
+                    'with_task_list' => ProductiveTask::whereNotNull('task_list_id')->count(),
+                    'with_parent_task' => ProductiveTask::whereNotNull('parent_task_id')->count(),
+                    'with_workflow_status' => ProductiveTask::whereNotNull('workflow_status_id')->count(),
+                    'with_attachment' => ProductiveTask::whereNotNull('attachment_id')->count(),
+                ],
+                'todos' => [
+                    'total' => ProductiveTodo::count(),
+                    'with_assignee' => ProductiveTodo::whereNotNull('assignee_id')->count(),
+                    'with_deal' => ProductiveTodo::whereNotNull('deal_id')->count(),
+                    'with_task' => ProductiveTodo::whereNotNull('task_id')->count(),
                 ],
                 // 'activities' => [
                 //     'total' => ProductiveActivity::count(),
@@ -611,6 +636,31 @@ class ValidateDataIntegrity extends AbstractAction
                 $command->info("\nCustom Field Options:");
                 $command->info("- Total: {$stats['custom_field_options']['total']}");
                 $command->info("- With Custom Field: {$stats['custom_field_options']['with_custom_field']}");
+
+                // Task Lists
+                $command->info("\nTask Lists:");
+                $command->info("- Total: {$stats['task_lists']['total']}");
+                $command->info("- With Project: {$stats['task_lists']['with_project']}");
+                $command->info("- With Board: {$stats['task_lists']['with_board']}");
+
+                // Tasks
+                $command->info("\nTasks:");
+                $command->info("- Total: {$stats['tasks']['total']}");
+                $command->info("- With Project: {$stats['tasks']['with_project']}");
+                $command->info("- With Creator: {$stats['tasks']['with_creator']}");
+                $command->info("- With Assignee: {$stats['tasks']['with_assignee']}");
+                $command->info("- With Last Actor: {$stats['tasks']['with_last_actor']}");
+                $command->info("- With Task List: {$stats['tasks']['with_task_list']}");
+                $command->info("- With Parent Task: {$stats['tasks']['with_parent_task']}");
+                $command->info("- With Workflow Status: {$stats['tasks']['with_workflow_status']}");
+                $command->info("- With Attachment: {$stats['tasks']['with_attachment']}");
+
+                // Todos
+                $command->info("\nTodos:");
+                $command->info("- Total: {$stats['todos']['total']}");
+                $command->info("- With Assignee: {$stats['todos']['with_assignee']}");
+                $command->info("- With Deal: {$stats['todos']['with_deal']}");
+                $command->info("- With Task: {$stats['todos']['with_task']}");
             }
 
             return true;

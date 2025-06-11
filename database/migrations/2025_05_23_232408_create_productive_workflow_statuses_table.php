@@ -24,7 +24,6 @@ return new class extends Migration
             $table->unsignedBigInteger('workflow_id')->nullable();
             
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveCustomDomain extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_custom_domains';
 
     public $incrementing = false;

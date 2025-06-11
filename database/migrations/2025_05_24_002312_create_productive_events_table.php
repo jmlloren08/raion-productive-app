@@ -28,7 +28,6 @@ return new class extends Migration
             $table->string('absence_type')->nullable();
             
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

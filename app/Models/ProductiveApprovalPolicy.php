@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveApprovalPolicy extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_approval_policies';
 
     public $incrementing = false;

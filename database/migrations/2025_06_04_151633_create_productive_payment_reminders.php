@@ -41,7 +41,6 @@ return new class extends Migration
             $table->unsignedBigInteger('prs_id')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

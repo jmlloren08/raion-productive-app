@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveService extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_services';
 
     public $incrementing = false;

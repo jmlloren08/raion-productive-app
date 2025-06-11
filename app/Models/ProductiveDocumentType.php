@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductiveDocumentType extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_document_types';
 
     public $incrementing = false;

@@ -24,37 +24,38 @@ return new class extends Migration
             $table->date('due_date')->nullable();
             $table->date('start_date')->nullable();
             $table->timestamp('closed_at')->nullable();
-            $table->timestamp('created_at_api')->nullable(); // renamed to prevent conflict with Laravel's own timestamps
+            $table->timestamp('created_at_api')->nullable();
             $table->timestamp('updated_at_api')->nullable();
-            $table->unsignedBigInteger('repeat_schedule_id')->nullable();
-            $table->unsignedInteger('repeat_on_interval')->nullable();
+            $table->integer('repeat_schedule_id')->nullable();
+            $table->integer('repeat_on_interval')->nullable();
             $table->unsignedInteger('repeat_on_monthday')->nullable();
             $table->json('repeat_on_weekday')->nullable();
             $table->date('repeat_on_date')->nullable();
-            $table->unsignedBigInteger('repeat_origin_id')->nullable();
+            $table->integer('repeat_origin_id')->nullable();
             $table->string('email_key');
             $table->json('custom_fields')->nullable();
-            $table->unsignedInteger('todo_count')->nullable();
-            $table->unsignedInteger('open_todo_count')->nullable();
-            $table->unsignedInteger('subtask_count')->nullable();
-            $table->unsignedInteger('open_subtask_count')->nullable();
-            $table->unsignedBigInteger('creation_method_id');
+            $table->integer('todo_count')->nullable();
+            $table->integer('open_todo_count')->nullable();
+            $table->integer('subtask_count')->nullable();
+            $table->integer('open_subtask_count')->nullable();
+            $table->integer('creation_method_id');
             $table->json('todo_assignee_ids')->nullable();
-            $table->unsignedInteger('task_dependency_count')->default(0);
-            $table->unsignedBigInteger('type_id');
-            $table->unsignedInteger('blocking_dependency_count')->default(0);
-            $table->unsignedInteger('waiting_on_dependency_count')->default(0);
-            $table->unsignedInteger('linked_dependency_count')->default(0);
-            $table->unsignedInteger('placement');
-            $table->unsignedInteger('subtask_placement')->nullable();
+            $table->integer('task_dependency_count')->default(0);
+            $table->integer('type_id');
+            $table->integer('blocking_dependency_count')->default(0);
+            $table->integer('waiting_on_dependency_count')->default(0);
+            $table->integer('linked_dependency_count')->default(0);
+
+            $table->integer('placement')->unsigned()->nullable();
+            $table->integer('subtask_placement')->nullable();
             $table->boolean('closed')->default(false);
-            $table->time('due_time')->nullable();
+            $table->string('due_time')->nullable();
             $table->json('tag_list')->nullable();
             $table->timestamp('last_activity_at')->nullable();
-            $table->unsignedInteger('initial_estimate');
-            $table->unsignedInteger('remaining_time');
-            $table->unsignedInteger('billable_time')->nullable();
-            $table->unsignedInteger('worked_time')->nullable();
+            $table->integer('initial_estimate')->nullable();
+            $table->integer('remaining_time')->nullable();
+            $table->integer('billable_time')->nullable();
+            $table->integer('worked_time')->nullable();
             $table->timestamp('deleted_at_api')->nullable();
             // Relationships
             $table->unsignedBigInteger('project_id')->nullable();
@@ -71,7 +72,6 @@ return new class extends Migration
             $table->json('custom_field_attachments')->nullable();
 
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

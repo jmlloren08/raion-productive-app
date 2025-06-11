@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductivePage extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_pages';
 
     public $incrementing = false;

@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveTimesheet extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_timesheets';
 
     public $incrementing = false;

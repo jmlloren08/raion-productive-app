@@ -28,7 +28,6 @@ return new class extends Migration
             $table->unsignedBigInteger('subsidiary_id')->nullable(); // JSON to store subsidiary domains or related information
             
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

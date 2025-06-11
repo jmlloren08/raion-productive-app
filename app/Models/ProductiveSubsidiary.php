@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductiveSubsidiary extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_subsidiaries';
 
     public $incrementing = false;

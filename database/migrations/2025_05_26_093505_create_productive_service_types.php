@@ -23,7 +23,6 @@ return new class extends Migration
             $table->unsignedBigInteger('assignee_id')->nullable(); 
 
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

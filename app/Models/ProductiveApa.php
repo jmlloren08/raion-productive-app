@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductiveApa extends Model
 {
-    use SoftDeletes;
-    
     protected $table = 'productive_apas';
 
     public $incrementing = false;

@@ -73,7 +73,6 @@ return new class extends Migration
             $table->json('custom_field_attachments')->nullable();
 
             $table->timestamps();
-            $table->softDeletes(); // Soft delete for archiving
         });
     }
 

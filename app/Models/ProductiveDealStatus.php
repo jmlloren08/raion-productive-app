@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductiveDealStatus extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_deal_statuses';
 
     public $incrementing = false;

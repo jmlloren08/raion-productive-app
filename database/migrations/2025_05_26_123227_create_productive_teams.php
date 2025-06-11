@@ -23,7 +23,6 @@ return new class extends Migration
             $table->json('members_included')->nullable();
             
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

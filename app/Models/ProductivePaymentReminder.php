@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductivePaymentReminder extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_payment_reminders';
 
     public $incrementing = false;

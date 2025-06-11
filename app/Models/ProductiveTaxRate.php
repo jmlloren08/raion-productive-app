@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductiveTaxRate extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'productive_tax_rates';
 
     public $incrementing = false;
