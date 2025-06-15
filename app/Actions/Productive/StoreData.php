@@ -37,8 +37,10 @@ use App\Actions\Productive\Store\StorePage;
 use App\Actions\Productive\Store\StoreSection;
 use App\Actions\Productive\Store\StoreTimeEntry;
 use App\Actions\Productive\Store\StoreTimeEntryVersion;
-use App\Actions\Productive\Store\StoreCustomField;
-use App\Actions\Productive\Store\StoreCustomFieldOption;
+use App\Actions\Productive\Store\StoreCustomDomain;
+use App\Actions\Productive\Store\StoreTag;
+use App\Actions\Productive\Store\StoreTimeSheet;
+use App\Actions\Productive\Store\StoreWorkflowStatus;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -46,10 +48,28 @@ class StoreData extends AbstractAction
 {
     protected array $requiredKeys = [
         'companies',
-        'people',
         'projects',
-        'tasks',
+        'document_styles',
+        'document_types',
+        'people',
+        'tax_rates',
+        'subsidiaries',
+        'workflows',
+        'contact_entries',
+        'lost_reasons',
+        'pipelines',
+        'deal_statuses',
+        'approval_policies',
+        'approval_policy_assignments',
+        'contracts',
         'deals',
+        'purchase_orders',
+        'emails',
+        'bills',
+        'attachments',
+        'teams',
+        'invoices',
+        'invoice_attributions',
         'boards',
         'bookings',
         'comments',
@@ -58,7 +78,11 @@ class StoreData extends AbstractAction
         'expenses',
         'integrations',
         'pages',
-        'sections'
+        'sections',
+        'custom_domains',
+        'timesheets',
+        'workflow_statuses',
+        'tags',
     ];
 
     public function __construct(
@@ -96,8 +120,10 @@ class StoreData extends AbstractAction
         private StoreIntegration $storeIntegrationAction,
         private StorePage $storePageAction,
         private StoreSection $storeSectionAction,
-        private StoreCustomField $storeCustomFieldAction,
-        private StoreCustomFieldOption $storeCustomFieldOptionAction,
+        private StoreCustomDomain $storeCustomDomainAction,
+        private StoreTimeSheet $storeTimeSheetAction,
+        private StoreWorkflowStatus $storeWorkflowStatusAction,
+        private StoreTag $storeTagAction,
     ) {}
 
     /**
@@ -143,7 +169,7 @@ class StoreData extends AbstractAction
                 empty($data['workflows']) &&
                 empty($data['contact_entries']) &&
                 empty($data['lost_reasons']) &&
-                empty($data['[pipeline]']) &&
+                empty($data['pipeline']) &&
                 empty($data['deal_statuses']) &&
                 empty($data['deal_statuses']) &&
                 empty($data['approval_policies']) &&
@@ -165,7 +191,9 @@ class StoreData extends AbstractAction
                 empty($data['expenses']) &&
                 empty($data['integrations']) &&
                 empty($data['pages']) &&
-                empty($data['sections'])
+                empty($data['sections']) &&
+                empty($data['custom_domains']) &&
+                empty($data['timesheets'])
             ) {
                 if ($command instanceof Command) {
                     $command->warn('No data fetched from Productive API. Skipping storage.');
@@ -1037,6 +1065,118 @@ class StoreData extends AbstractAction
 
                 if ($command instanceof Command) {
                     $command->info("Sections: {$sectionsSuccess} stored successfully, {$sectionsError} failed");
+                }
+            }
+
+            // Store custom domains
+            if (!empty($data['custom_domains'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing custom domains...');
+                }
+
+                $customDomainsSuccess = 0;
+                $customDomainsError = 0;
+                foreach ($data['custom_domains'] as $customDomainData) {
+                    try {
+                        $this->storeCustomDomainAction->handle([
+                            'customDomainData' => $customDomainData,
+                            'command' => $command
+                        ]);
+                        $customDomainsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store custom domain (ID: {$customDomainData['id']}): " . $e->getMessage());
+                        }
+                        $customDomainsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Custom Domains: {$customDomainsSuccess} stored successfully, {$customDomainsError} failed");
+                }
+            }
+
+            // Store timesheets
+            if (!empty($data['timesheets'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing timesheets...');
+                }
+
+                $timeSheetsSuccess = 0;
+                $timeSheetsError = 0;
+                foreach ($data['timesheets'] as $timeSheetData) {
+                    try {
+                        $this->storeTimeSheetAction->handle([
+                            'timeSheetData' => $timeSheetData,
+                            'command' => $command
+                        ]);
+                        $timeSheetsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store timesheet (ID: {$timeSheetData['id']}): " . $e->getMessage());
+                        }
+                        $timeSheetsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Timesheets: {$timeSheetsSuccess} stored successfully, {$timeSheetsError} failed");
+                }
+            }
+
+            // Store workflow statuses
+            if (!empty($data['workflow_statuses'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing workflow statuses...');
+                }
+
+                $workflowStatusesSuccess = 0;
+                $workflowStatusesError = 0;
+                foreach ($data['workflow_statuses'] as $workflowStatusData) {
+                    try {
+                        $this->storeWorkflowStatusAction->handle([
+                            'workflowStatusData' => $workflowStatusData,
+                            'command' => $command
+                        ]);
+                        $workflowStatusesSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store workflow status (ID: {$workflowStatusData['id']}): " . $e->getMessage());
+                        }
+                        $workflowStatusesError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Workflow Statuses: {$workflowStatusesSuccess} stored successfully, {$workflowStatusesError} failed");
+                }
+            }
+
+            // Store tags
+            if (!empty($data['tags'])) {
+                if ($command instanceof Command) {
+                    $command->info('Storing tags...');
+                }
+
+                $tagsSuccess = 0;
+                $tagsError = 0;
+                foreach ($data['tags'] as $tagData) {
+                    try {
+                        $this->storeTagAction->handle([
+                            'tagData' => $tagData,
+                            'command' => $command
+                        ]);
+                        $tagsSuccess++;
+                    } catch (\Exception $e) {
+                        if ($command instanceof Command) {
+                            $command->error("Failed to store tag (ID: {$tagData['id']}): " . $e->getMessage());
+                        }
+                        $tagsError++;
+                    }
+                }
+
+                if ($command instanceof Command) {
+                    $command->info("Tags: {$tagsSuccess} stored successfully, {$tagsError} failed");
                 }
             }
 

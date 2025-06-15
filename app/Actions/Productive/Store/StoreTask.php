@@ -36,7 +36,7 @@ class StoreTask extends AbstractAction
         'assignee_id' => ProductivePeople::class,
         'last_actor_id' => ProductivePeople::class,
         'task_list_id' => ProductiveTaskList::class,
-        'parent_task_id' => ProductiveTaskList::class,
+        'parent_task_id' => ProductiveTask::class,
         'workflow_status_id' => ProductiveWorkflowStatus::class, 
         'attachment_id' => ProductiveAttachment::class,
     ];

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveWorkflow extends Model
 {
@@ -13,8 +12,10 @@ class ProductiveWorkflow extends Model
     public $timestamps = false;
 
     protected $fillable = [
+
         'id',
         'type',
+        
         'name',
         'archived_at',
 

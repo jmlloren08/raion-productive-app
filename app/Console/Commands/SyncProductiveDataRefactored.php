@@ -36,8 +36,10 @@ use App\Actions\Productive\Fetch\FetchEvents;
 use App\Actions\Productive\Fetch\FetchExpenses;
 use App\Actions\Productive\Fetch\FetchIntegrations;
 use App\Actions\Productive\Fetch\FetchPages;
-use App\Actions\Productive\Fetch\FetchCustomFields;
-use App\Actions\Productive\Fetch\FetchCustomFieldOptions;
+use App\Actions\Productive\Fetch\FetchCustomDomains;
+use App\Actions\Productive\Fetch\FetchTags;
+use App\Actions\Productive\Fetch\FetchTimeSheets;
+use App\Actions\Productive\Fetch\FetchWorkflowStatuses;
 use App\Actions\Productive\StoreData;
 use App\Actions\Productive\ValidateDataIntegrity;
 use Illuminate\Console\Command;
@@ -80,6 +82,10 @@ class SyncProductiveDataRefactored extends Command
         'integrations' => [],
         'pages' => [],
         'sections' => [],
+        'custom_domains' => [],
+        'timesheets' => [],
+        'workflow_statuses' => [],
+        'tags' => [],
         // 'activities' => []
     ];
 
@@ -117,8 +123,11 @@ class SyncProductiveDataRefactored extends Command
         private FetchIntegrations $fetchIntegrationAction,
         private FetchPages $fetchPagesAction,
         private FetchSections $fetchSectionsAction,
-        private FetchCustomFields $fetchCustomFieldsAction,
-        private FetchCustomFieldOptions $fetchCustomFieldOptionsAction,
+        private FetchCustomDomains $fetchCustomDomainsAction,
+        private FetchTimeSheets $fetchTimeSheetsAction,
+        private FetchWorkflowStatuses $fetchWorkflowStatusesAction,
+        private FetchTags $fetchTagsAction,
+        //
         private StoreData $storeDataAction,
         private ValidateDataIntegrity $validateDataIntegrityAction
     ) {
@@ -556,6 +565,58 @@ class SyncProductiveDataRefactored extends Command
 
             $this->data['sections'] = $sections['sections'];
 
+            // Fetch custom domains
+            $customDomains = $this->fetchCustomDomainsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$customDomains['success']) {
+                $this->error('Failed to fetch custom domains: ' . ($customDomains['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['custom_domains'] = $customDomains['custom_domains'];
+
+            // Fetch timesheets
+            $timeSheets = $this->fetchTimeSheetsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$timeSheets['success']) {
+                $this->error('Failed to fetch timesheets: ' . ($timeSheets['error'] ?? 'Unknown error'));
+                return 1;
+            }
+
+            $this->data['timesheets'] = $timeSheets['timesheets'];
+
+            // Fetch workflow statuses
+            $workflowStatuses = $this->fetchWorkflowStatusesAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$workflowStatuses['success']) {
+                $this->error('Failed to fetch workflow statuses: ' . ($workflowStatuses['error'] ?? 'Unknown error'));
+                return 1;
+            }
+            
+            $this->data['workflow_statuses'] = $workflowStatuses['workflow_statuses'];
+
+            // Fetch tags
+            $tags = $this->fetchTagsAction->handle([
+                'apiClient' => $apiClient,
+                'command' => $this
+            ]);
+
+            if (!$tags['success']) {
+                $this->error('Failed to fetch tags: ' . ($tags['error'] ?? 'Unknown error'));
+                return 1;
+            }
+            
+            $this->data['tags'] = $tags['tags'];
+
             // Store data in MySQL
             $this->info('Storing data in database...');
             $storageSuccess = $this->storeDataAction->handle([
@@ -564,9 +625,11 @@ class SyncProductiveDataRefactored extends Command
             ]);
 
             if (!$storageSuccess) {
-                $this->error('Failed to store data in database. Aborting sync process.');
+                $this->error('Faile to store data in database. Aborting sync process.');
                 return 1;
             }
+            
+            $this->info('Data stored successfully in database.');
 
             // Validate data integrity
             $this->info('Validating data integrity...');
@@ -609,6 +672,10 @@ class SyncProductiveDataRefactored extends Command
             $this->info('Integrations synced: ' . count($this->data['integrations']));
             $this->info('Pages synced: ' . count($this->data['pages']));
             $this->info('Sections synced: ' . count($this->data['sections']));
+            $this->info('Custom Domains synced: ' . count($this->data['custom_domains']));
+            $this->info('Timesheets synced: ' . count($this->data['timesheets']));
+            $this->info('Workflow Statuses synced: ' . count($this->data['workflow_statuses']));
+            $this->info('Tags synced: ' . count($this->data['tags']));
             $this->info('Execution time: ' . $executionTime . ' seconds');
             $this->info('Sync completed successfully!');
 

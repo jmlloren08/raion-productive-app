@@ -3,16 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductiveTaxRate extends Model
 {
     protected $table = 'productive_tax_rates';
 
     public $incrementing = false;
-    public $timestamps = false; // Disable Laravel timestamps
+    public $timestamps = false;
 
     protected $fillable = [
         // Base data

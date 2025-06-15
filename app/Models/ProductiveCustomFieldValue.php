@@ -40,4 +40,14 @@ class ProductiveCustomFieldValue extends Model
     {
         return $this->belongsTo(ProductiveCfo::class, 'custom_field_option_id');
     }
+
+    public function project()
+    {
+        return $this->belongsTo(ProductiveProject::class, 'entity_id');
+    }
+    
+    public function deal()
+    {
+        return $this->belongsTo(ProductiveDeal::class, 'entity_id');
+    }
 }

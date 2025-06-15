@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveLostReason extends Model
 {
@@ -18,8 +17,10 @@ class ProductiveLostReason extends Model
      * @var array
      */
     protected $fillable = [
+
         'id',
         'type',
+
         'name',
         'archived_at',
     ];

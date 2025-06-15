@@ -145,7 +145,7 @@ class StoreContract extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'template' => 'deal_id',
+            'deal' => 'deal_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {

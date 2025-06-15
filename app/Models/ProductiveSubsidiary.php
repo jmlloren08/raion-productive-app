@@ -3,20 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductiveSubsidiary extends Model
 {
     protected $table = 'productive_subsidiaries';
 
     public $incrementing = false;
-    public $timestamps = false; // Disable Laravel timestamps
+    public $timestamps = false;
 
     protected $fillable = [
+
         'id',
         'type',
+        
         'name',
         'invoice_number_format',
         'invoice_number_scope',

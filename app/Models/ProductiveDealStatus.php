@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductiveDealStatus extends Model
@@ -14,8 +13,10 @@ class ProductiveDealStatus extends Model
     public $timestamps = false;
 
     protected $fillable = [
+
         'id',
         'type',
+        
         'name',
         'position',
         'color_id',

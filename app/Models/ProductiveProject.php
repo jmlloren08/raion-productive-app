@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductiveProject extends Model
 {
@@ -15,8 +13,10 @@ class ProductiveProject extends Model
     public $timestamps = false; // Disable Laravel timestamps
 
     protected $fillable = [
+
         'id',
         'type',
+        
         'name',
         'number',
         'project_number',
