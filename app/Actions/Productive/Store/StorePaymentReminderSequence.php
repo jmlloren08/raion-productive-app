@@ -4,6 +4,7 @@ namespace App\Actions\Productive\Store;
 
 use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveDeal;
+use App\Models\ProductivePaymentReminder;
 use App\Models\ProductivePaymentReminderSequence;
 use App\Models\ProductivePeople;
 use App\Models\ProductivePrs;
@@ -28,7 +29,7 @@ class StorePaymentReminderSequence extends AbstractAction
     protected array $foreignKeys = [
         'creator_id' => ProductivePeople::class,
         'updater_id' => ProductivePeople::class,
-        'payment_reminder_id' => ProductivePrs::class,
+        'payment_reminder_id' => ProductivePaymentReminder::class,
     ];
 
     /**
@@ -95,7 +96,7 @@ class StorePaymentReminderSequence extends AbstractAction
 
             // Create or update payment reminder sequence
             ProductivePrs::updateOrCreate(
-                ['prs_id' => $sequenceData['id']],
+                ['id' => $sequenceData['id']],
                 $data
             );
 
@@ -157,12 +158,12 @@ class StorePaymentReminderSequence extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'creator' => ['dbKey' => 'creator_id', 'lookupColumn' => 'person_id'],
-            'updater' => ['dbKey' => 'updater_id', 'lookupColumn' => 'person_id'],
-            'payment_reminder' => ['dbKey' => 'payment_reminder_id', 'lookupColumn' => 'payment_reminder_id'],
+            'creator' => 'creator_id',
+            'updater' => 'updater_id',
+            'payment_reminder' => 'payment_reminder_id',
         ];
 
-        foreach ($relationshipMap as $apiKey => $config) {
+        foreach ($relationshipMap as $apiKey => $dbKey) {
             if (isset($relationships[$apiKey]['data']['id'])) {
                 $id = $relationships[$apiKey]['data']['id'];
                 if ($command) {
@@ -170,15 +171,15 @@ class StorePaymentReminderSequence extends AbstractAction
                 }
 
                 // Get the model class for this relationship
-                $modelClass = $this->foreignKeys[$config['dbKey']];
+                $modelClass = $this->foreignKeys[$dbKey];
 
-                if (!$modelClass::where($config['lookupColumn'], $id)->exists()) {
+                if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
                         $command->warn("Payment reminder sequence '{$sequenceId}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
-                    $data[$config['dbKey']] = null;
+                    $data[$dbKey] = null;
                 } else {
-                    $data[$config['dbKey']] = $id;
+                    $data[$dbKey] = $id;
                     if ($command) {
                         $command->info("Successfully linked {$apiKey} with ID: {$id}");
                     }

@@ -8,6 +8,7 @@ use App\Models\ProductiveEmail;
 use App\Models\ProductiveAttachment;
 use App\Models\ProductiveDeal;
 use App\Models\ProductiveInvoice;
+use App\Models\ProductivePaymentReminder;
 use App\Models\ProductivePrs;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -30,7 +31,7 @@ class StoreEmail extends AbstractAction
         'creator_id' => ProductivePeople::class,
         'deal_id' => ProductiveDeal::class,
         'invoice_id' => ProductiveInvoice::class,
-        'payment_reminder_sequence_id' => ProductivePrs::class,
+        'payment_reminder_id' => ProductivePaymentReminder::class,
         'attachment_id' => ProductiveAttachment::class,
     ];
 
@@ -178,7 +179,7 @@ class StoreEmail extends AbstractAction
             'creator' => 'creator_id',
             'deal' => 'deal_id',
             'invoice' => 'invoice_id',
-            'payment_reminder' => 'payment_reminder_sequence_id',
+            'payment_reminder' => 'payment_reminder_id',
             'attachment' => 'attachment_id',
         ];
 

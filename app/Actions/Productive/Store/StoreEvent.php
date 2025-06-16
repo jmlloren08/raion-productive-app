@@ -4,12 +4,6 @@ namespace App\Actions\Productive\Store;
 
 use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveEvent;
-use App\Models\ProductiveCompany;
-use App\Models\ProductivePeople;
-use App\Models\ProductiveProject;
-use App\Models\ProductiveTask;
-use App\Models\ProductiveDeal;
-use App\Models\ProductiveAttachment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;

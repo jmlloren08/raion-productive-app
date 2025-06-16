@@ -3,9 +3,7 @@
 namespace App\Actions\Productive\Store;
 
 use App\Actions\Productive\AbstractAction;
-use App\Models\ProductiveCompany;
 use App\Models\ProductiveBoard;
-use App\Models\ProductivePeople;
 use App\Models\ProductiveProject;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;

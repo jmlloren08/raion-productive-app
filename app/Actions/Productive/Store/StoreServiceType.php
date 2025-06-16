@@ -82,7 +82,7 @@ class StoreServiceType extends AbstractAction
 
             // Create or update service type
             ProductiveServiceType::updateOrCreate(
-                ['service_type_id' => $serviceTypeData['id']],
+                ['id' => $serviceTypeData['id']],
                 $data
             );
 

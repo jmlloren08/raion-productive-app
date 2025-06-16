@@ -103,7 +103,7 @@ class StoreService extends AbstractAction
 
             // Create or update service
             ProductiveService::updateOrCreate(
-                ['service_id' => $serviceData['id']],
+                ['id' => $serviceData['id']],
                 $data
             );
 
@@ -187,13 +187,13 @@ class StoreService extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'service_type' => ['dbKey' => 'service_type_id', 'lookupColumn' => 'service_type_id'],
-            'deal' => ['dbKey' => 'deal_id', 'lookupColumn' => 'deal_id'],
-            'person' => ['dbKey' => 'person_id', 'lookupColumn' => 'person_id'],
-            'section' => ['dbKey' => 'section_id', 'lookupColumn' => 'section_id'],
+            'service_type' => 'service_type_id',
+            'deal' => 'deal_id',
+            'person' => 'person_id',
+            'section' => 'section_id',
         ];
 
-        foreach ($relationshipMap as $apiKey => $config) {
+        foreach ($relationshipMap as $apiKey => $dbKey) {
             if (isset($relationships[$apiKey]['data']['id'])) {
                 $id = $relationships[$apiKey]['data']['id'];
                 if ($command) {
@@ -201,15 +201,15 @@ class StoreService extends AbstractAction
                 }
 
                 // Get the model class for this relationship
-                $modelClass = $this->foreignKeys[$config['dbKey']];
+                $modelClass = $this->foreignKeys[$dbKey];
 
-                if (!$modelClass::where($config['lookupColumn'], $id)->exists()) {
+                if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
                         $command->warn("Service '{$serviceName}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
-                    $data[$config['dbKey']] = null;
+                    $data[$dbKey] = null;
                 } else {
-                    $data[$config['dbKey']] = $id;
+                    $data[$dbKey] = $id;
                     if ($command) {
                         $command->info("Successfully linked {$apiKey} with ID: {$id}");
                     }

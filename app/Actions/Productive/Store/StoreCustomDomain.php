@@ -85,7 +85,7 @@ class StoreCustomDomain extends AbstractAction
 
             // Create or update custom domain
             ProductiveCustomDomain::updateOrCreate(
-                ['custom_domain_id' => $customDomainData['id']],
+                ['id' => $customDomainData['id']],
                 $data
             );
 
@@ -167,7 +167,7 @@ class StoreCustomDomain extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'subsidiaries' => ['dbKey' => 'subsidiary_id', 'lookupColumn' => 'subsidiary_id'],
+            'subsidiaries' => 'subsidiary_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $config) {

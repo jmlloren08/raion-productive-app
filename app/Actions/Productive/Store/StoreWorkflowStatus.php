@@ -91,7 +91,7 @@ class StoreWorkflowStatus extends AbstractAction
 
             // Create or update workflow status
             ProductiveWorkflowStatus::updateOrCreate(
-                ['workflow_status_id' => $workflowStatusData['id']],
+                ['id' => $workflowStatusData['id']],
                 $data
             );
 
@@ -153,10 +153,10 @@ class StoreWorkflowStatus extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'workflow' => ['dbKey' => 'workflow_id', 'lookupColumn' => 'workflow_id'],
+            'workflow' => 'workflow_id',
         ];
 
-        foreach ($relationshipMap as $apiKey => $config) {
+        foreach ($relationshipMap as $apiKey => $dbKey) {
             if (isset($relationships[$apiKey]['data']['id'])) {
                 $id = $relationships[$apiKey]['data']['id'];
                 if ($command) {
@@ -164,15 +164,15 @@ class StoreWorkflowStatus extends AbstractAction
                 }
 
                 // Get the model class for this relationship
-                $modelClass = $this->foreignKeys[$config['dbKey']];
+                $modelClass = $this->foreignKeys[$dbKey];
 
-                if (!$modelClass::where($config['lookupColumn'], $id)->exists()) {
+                if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
                         $command->warn("Workflow status '{$workflowStatusId}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
-                    $data[$config['dbKey']] = null;
+                    $data[$dbKey] = null;
                 } else {
-                    $data[$config['dbKey']] = $id;
+                    $data[$dbKey] = $id;
                     if ($command) {
                         $command->info("Successfully linked {$apiKey} with ID: {$id}");
                     }

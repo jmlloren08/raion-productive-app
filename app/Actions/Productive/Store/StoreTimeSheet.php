@@ -91,7 +91,7 @@ class StoreTimeSheet extends AbstractAction
 
             // Create or update time sheet
             ProductiveTimeSheet::updateOrCreate(
-                ['timesheet_id' => $timeSheetData['id']],
+                ['id' => $timeSheetData['id']],
                 $data
             );
 
@@ -153,8 +153,8 @@ class StoreTimeSheet extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'person' => ['dbKey' => 'person_id', 'lookupColumn' => 'person_id'],
-            'creator' => ['dbKey' => 'creator_id', 'lookupColumn' => 'person_id'],
+            'person' => 'person_id',
+            'creator' => 'creator_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $config) {

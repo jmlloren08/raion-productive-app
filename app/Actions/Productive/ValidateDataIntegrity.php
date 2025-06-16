@@ -178,7 +178,7 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_creator' => ProductiveEmail::whereNotNull('creator_id')->count(),
                     'with_deal' => ProductiveEmail::whereNotNull('deal_id')->count(),
                     'with_invoice' => ProductiveEmail::whereNotNull('invoice_id')->count(),
-                    'with_payment_reminder_sequence' => ProductiveEmail::whereNotNull('payment_reminder_id')->count(),
+                    'with_payment_reminder_sequence' => ProductiveEmail::whereNotNull('prs_id')->count(),
                     'with_attachment' => ProductiveEmail::whereNotNull('attachment_id')->count()
                 ],
                 'bills' => [
@@ -215,7 +215,7 @@ class ValidateDataIntegrity extends AbstractAction
                     'with_subsidiary' => ProductiveInvoice::whereNotNull('subsidiary_id')->count(),
                     'with_parent_invoice' => ProductiveInvoice::whereNotNull('parent_invoice_id')->count(),
                     'with_issuer' => ProductiveInvoice::whereNotNull('issuer_id')->count(),
-                    'with_invoice_attribution' => ProductiveInvoice::whereNotNull('ia_id')->count(),
+                    'with_invoice_attribution' => ProductiveInvoice::whereNotNull('invoice_attribution_id')->count(),
                     'with_attachment' => ProductiveInvoice::whereNotNull('attachment_id')->count(),
                 ],
                 'invoice_attributions' => [

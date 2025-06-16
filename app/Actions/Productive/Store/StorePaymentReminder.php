@@ -98,7 +98,7 @@ class StorePaymentReminder extends AbstractAction
 
             // Create or update payment reminder
             ProductivePaymentReminder::updateOrCreate(
-                ['payment_reminder_id' => $reminderData['id']],
+                ['id' => $reminderData['id']],
                 $data
             );
 
@@ -183,13 +183,13 @@ class StorePaymentReminder extends AbstractAction
     {
         // Map relationship keys to their corresponding data keys
         $relationshipMap = [
-            'creator' => ['dbKey' => 'creator_id', 'lookupColumn' => 'person_id'],
-            'updater' => ['dbKey' => 'updater_id', 'lookupColumn' => 'person_id'],
-            'invoice' => ['dbKey' => 'invoice_id', 'lookupColumn' => 'invoice_id'],
-            'payment_reminder_sequence' => ['dbKey' => 'prs_id', 'lookupColumn' => 'prs_id'],
+            'creator' => 'creator_id',
+            'updater' => 'updater_id',
+            'invoice' => 'invoice_id',
+            'payment_reminder_sequence' => 'prs_id',
         ];
 
-        foreach ($relationshipMap as $apiKey => $config) {
+        foreach ($relationshipMap as $apiKey => $dbKey) {
             if (isset($relationships[$apiKey]['data']['id'])) {
                 $id = $relationships[$apiKey]['data']['id'];
                 if ($command) {
@@ -197,15 +197,15 @@ class StorePaymentReminder extends AbstractAction
                 }
 
                 // Get the model class for this relationship
-                $modelClass = $this->foreignKeys[$config['dbKey']];
+                $modelClass = $this->foreignKeys[$dbKey];
 
-                if (!$modelClass::where($config['lookupColumn'], $id)->exists()) {
+                if (!$modelClass::where('id', $id)->exists()) {
                     if ($command) {
                         $command->warn("Payment reminder '{$reminderId}' is linked to {$apiKey}: {$id}, but this record doesn't exist in our database.");
                     }
-                    $data[$config['dbKey']] = null;
+                    $data[$dbKey] = null;
                 } else {
-                    $data[$config['dbKey']] = $id;
+                    $data[$dbKey] = $id;
                     if ($command) {
                         $command->info("Successfully linked {$apiKey} with ID: {$id}");
                     }

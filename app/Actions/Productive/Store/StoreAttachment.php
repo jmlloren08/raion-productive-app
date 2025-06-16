@@ -15,7 +15,6 @@ use App\Models\ProductiveExpense;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductivePage;
 use App\Models\ProductiveTask;
-use App\Models\ProductiveTaxRate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;

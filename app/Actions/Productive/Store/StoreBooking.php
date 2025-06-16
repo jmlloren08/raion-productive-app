@@ -7,7 +7,6 @@ use App\Models\ProductiveApprovalStatus;
 use App\Models\ProductiveAttachment;
 use App\Models\ProductiveBooking;
 use App\Models\ProductiveEvent;
-use App\Models\ProductiveProject;
 use App\Models\ProductivePeople;
 use App\Models\ProductiveService;
 use Illuminate\Console\Command;

@@ -12,14 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('productive_tags', function (Blueprint $table) {
+
             $table->id();
             $table->string('type')->default('tags');
+            
             $table->string('name')->nullable();
             $table->string('color')->nullable();
-            
-            // Add indexes for better query performance
-            $table->index(['tag_id', 'type']);
-            $table->index('name');
 
             $table->timestamps();
         });

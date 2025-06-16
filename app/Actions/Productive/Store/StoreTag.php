@@ -83,7 +83,7 @@ class StoreTag extends AbstractAction
 
             // Create or update tag
             ProductiveTag::updateOrCreate(
-                ['tag_id' => $tagData['id']],
+                ['id' => $tagData['id']],
                 $data
             );
 
@@ -111,7 +111,6 @@ class StoreTag extends AbstractAction
     protected function validateDataTypes(array $data): void
     {
         $rules = [
-            'tag_id' => 'nullable|integer',
             'name' => 'nullable|string',
             'color' => 'nullable|string',
         ];

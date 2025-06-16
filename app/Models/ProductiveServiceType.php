@@ -25,7 +25,6 @@ class ProductiveServiceType extends Model
 
     protected $casts = [
         'archived_at' => 'timestamp',
-        'description' => 'text',
     ];
 
     /**

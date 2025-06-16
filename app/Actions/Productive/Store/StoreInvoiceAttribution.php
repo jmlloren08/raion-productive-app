@@ -6,7 +6,6 @@ use App\Actions\Productive\AbstractAction;
 use App\Models\ProductiveDeal;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductiveInvoiceAttribution;
-use App\Models\ProductivePeople;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
