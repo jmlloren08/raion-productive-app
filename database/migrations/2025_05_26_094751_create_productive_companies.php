@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('productive_companies', function (Blueprint $table) {
             // Primary key
             $table->unsignedBigInteger('id')->primary();
-            $table->string('type')->default('companies'); // type of company, e.g., 'company', 'customer', etc.
+            $table->string('type')->default('companies');
             // Core attributes
             $table->string('name');
             $table->string('billing_name')->nullable();

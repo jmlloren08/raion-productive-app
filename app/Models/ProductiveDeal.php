@@ -10,11 +10,13 @@ class ProductiveDeal extends Model
     protected $table = 'productive_deals';
 
     public $incrementing = false;
-    public $timestamps = false; // Disable Laravel timestamps
+    public $timestamps = false;
 
     protected $fillable = [
+
         'id',
         'type',
+        
         'name',
         'date',
         'end_date',

@@ -9,7 +9,7 @@ class ProductiveCompany extends Model
     protected $table = 'productive_companies';
 
     public $incrementing = false;
-    public $timestamps = false; // Disable Laravel timestamps
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -77,7 +77,7 @@ class ProductiveCompany extends Model
      */
     public function subsidiary()
     {
-        return $this->belongsTo(ProductiveSubsidiary::class, 'default_subsidiary_id');
+        return $this->belongsTo(ProductiveSubsidiary::class, 'subsidiary_id');
     }
     /**
      * Get the tax rate associated with the company.
@@ -85,7 +85,7 @@ class ProductiveCompany extends Model
 
     public function taxRate()
     {
-        return $this->belongsTo(ProductiveTaxRate::class, 'default_tax_rate_id');
+        return $this->belongsTo(ProductiveTaxRate::class, 'tax_rate_id');
     }
 
 }

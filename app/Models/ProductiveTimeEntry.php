@@ -41,6 +41,7 @@ class ProductiveTimeEntry extends Model
         'currency',
         'currency_default',
         'currency_normalized',
+        
         'person_id',
         'service_id',
         'task_id',
