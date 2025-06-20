@@ -38,4 +38,9 @@ class ProductiveTimeEntryVersion extends Model
         return $this->belongsTo(ProductivePeople::class, 'creator_id');
     }
 
+    public function timeEntry(): BelongsTo
+    {
+        return $this->belongsTo(ProductiveTimeEntry::class, 'item_id');
+    }
+
 }

@@ -17,8 +17,10 @@ class ProductiveContract extends Model
      * @var array
      */
     protected $fillable = [
+
         'id',
         'type',
+        
         'ends_on',
         'starts_on',
         'next_occurrence_on',

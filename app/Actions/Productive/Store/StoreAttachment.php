@@ -14,6 +14,7 @@ use App\Models\ProductiveEmail;
 use App\Models\ProductiveExpense;
 use App\Models\ProductiveInvoice;
 use App\Models\ProductivePage;
+use App\Models\ProductivePurchaseOrder;
 use App\Models\ProductiveTask;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -40,7 +41,7 @@ class StoreAttachment extends AbstractAction
     protected array $foreignKeys = [
         'creator_id' => ProductivePeople::class,
         'invoice_id' => ProductiveInvoice::class,
-        'purchase_order_id' => ProductiveInvoice::class,
+        'purchase_order_id' => ProductivePurchaseOrder::class,
         'bill_id' => ProductiveBill::class,
         'email_id' => ProductiveEmail::class,
         'page_id' => ProductivePage::class,
@@ -167,15 +168,16 @@ class StoreAttachment extends AbstractAction
         $relationshipMap = [
             'creator' => 'creator_id',
             'invoice' => 'invoice_id',
-            'purchase_order' => 'purchase_order',
+            'purchase_order' => 'purchase_order_id',
             'bill' => 'bill_id',
             'email' => 'email_id',
             'page' => 'page_id',
             'expense' => 'expense_id',
             'comment' => 'comment_id',
+            'task' => 'task_id',
             'document_style' => 'document_style_id',
             'document_type' => 'document_type_id',
-            'deal ' => 'deal_id',
+            'deal' => 'deal_id',
         ];
 
         foreach ($relationshipMap as $apiKey => $dbKey) {
@@ -250,4 +252,4 @@ class StoreAttachment extends AbstractAction
             throw new ValidationException($validator);
         }
     }
-} 
+}
